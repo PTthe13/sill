@@ -56,7 +56,7 @@ Measured, not estimated — one band, ten idle minutes, on an M-series Mac:
 
 ```bash
 ./Scripts/build-app.sh        # build/Sill.app (universal, ~700K)
-./Scripts/make-dmg.sh         # build/Sill-1.0.dmg
+./Scripts/make-dmg.sh         # build/Sill-<version>.dmg
 swift run silltests           # the test suite
 ```
 
