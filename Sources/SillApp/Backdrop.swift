@@ -45,9 +45,10 @@ enum Backdrop {
         // noticed, while an unchanged one costs a stat call.
         let modified = (try? url.resourceValues(forKeys: [.contentModificationDateKey]))?
             .contentModificationDate?.timeIntervalSince1970 ?? 0
-        let key = "\(url.path)|\(modified)|\(rect.integral.debugDescription)"
+        let imageKey = "\(url.path)|\(modified)"
+        let key = "\(imageKey)|\(rect.integral.debugDescription)"
         if let cached = cache[key], cached.url == url { return cached.luminance }
-        guard let image = loadImage(url) else { return .unknown }
+        guard let image = loadImage(url, key: imageKey) else { return .unknown }
 
         // Wallpapers are drawn to fill the screen, centred and cropped.
         let screenFrame = screen.frame
@@ -70,11 +71,15 @@ enum Backdrop {
               let crop = image.cropping(to: inImage.integral),
               let value = measure(crop, edge: edge) else { return .unknown }
 
+        if cache.count >= 64 { cache.removeAll() }
         cache[key] = (url, value)
         return value
     }
 
-    static func invalidate() { cache.removeAll() }
+    static func invalidate() {
+        cache.removeAll()
+        images.removeAll()
+    }
 
     /// The part of the wallpaper that sits under `rect`, at wallpaper resolution.
     static func crop(screen: NSScreen, rect: CGRect) -> CGImage? {
@@ -96,6 +101,24 @@ enum Backdrop {
             .intersection(CGRect(origin: .zero, size: imageSize))
         guard !inImage.isNull, inImage.width >= 1, inImage.height >= 1 else { return nil }
         return image.cropping(to: inImage.integral)
+    }
+
+    /// Decoded wallpapers, keyed by path and modification date.
+    ///
+    /// Decoding even a 512px thumbnail of a photograph costs about 110ms here,
+    /// and the sample cache misses on every new band rectangle — so dragging
+    /// the width slider used to re-decode the same wallpaper once per step, on
+    /// the main thread. The proxies are small (about 0.6MB each) and there is
+    /// one per display.
+    private static var images: [String: CGImage] = [:]
+    private static let imageCacheLimit = 6
+
+    private static func loadImage(_ url: URL, key: String) -> CGImage? {
+        if let cached = images[key] { return cached }
+        guard let image = loadImage(url) else { return nil }
+        if images.count >= imageCacheLimit { images.removeAll() }
+        images[key] = image
+        return image
     }
 
     private static func loadImage(_ url: URL) -> CGImage? {

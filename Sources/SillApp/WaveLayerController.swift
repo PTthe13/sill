@@ -381,11 +381,18 @@ final class WaveLayerController {
     /// Places and fills the hover readout for the current pointer position.
     private func updateChip(force: Bool = false) {
         guard let fraction = hoverFraction, !history.cpu.isEmpty else { return }
+        // A young band leaves the old end of the strip blank. There is nothing
+        // to read back there, so the readout stays away rather than reporting
+        // the oldest sample it does have for a moment it never saw.
+        let drawn = min(sampleCount, max(0, available))
+        let blankUntil = sampleCount > 0 ? 1 - CGFloat(drawn) / CGFloat(sampleCount) : 0
+        chip.isHidden = fraction < blankUntil - 0.001
+        guard !chip.isHidden else { return }
         // Only the samples this band has room for are on screen to point at.
         // Only as far back as the band actually draws: on a young band that is
         // fewer samples than the strip is long.
         let index = Scrub.index(alongFraction: fraction, count: history.cpu.count,
-                                visible: min(sampleCount, max(2, available)))
+                                visible: min(sampleCount, max(2, drawn)))
         // A pointer sliding along the band crosses many pixels per sample:
         // re-measuring and re-committing for each of them is wasted work.
         guard force || index != chipIndex else { return }

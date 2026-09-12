@@ -193,7 +193,14 @@ final class AppController: NSObject, NSApplicationDelegate {
         // Safety net: a missed mouse-moved event would otherwise leave the band
         // deaf to clicks until the pointer moves again.
         updateHitTesting(force: true)
-        guard isOpen else { return }
+        // Refreshing the panel means reading the whole process table, about
+        // 2.5ms, and the GPU statistics, another 2ms. Worth it while someone is
+        // looking at the panel; pure waste while it sits open under somebody's
+        // browser window. This takes effect on the next tick, which is what
+        // `wantsDetail` is read on.
+        let watched = isOpen && (openBand?.isVisible ?? false)
+        engine.wantsDetail = watched
+        guard watched else { return }
         updatePanelData(engine: engine)
     }
 
