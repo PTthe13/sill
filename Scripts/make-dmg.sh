@@ -1,12 +1,18 @@
 #!/bin/bash
 # Builds Sill.app and wraps it in a compressed disk image.
 #
-# Distribution outside the App Store also needs a Developer ID signature and
-# notarisation, which this machine has no identity for. Set SILL_SIGN_IDENTITY
-# to a "Developer ID Application: ..." identity before running, then notarise:
-#   xcrun notarytool submit build/Sill.dmg --keychain-profile <profile> --wait
-#   xcrun stapler staple build/Sill.dmg
-# Without that, Gatekeeper warns on first open (right-click > Open to bypass).
+# For distribution, set SILL_SIGN_IDENTITY to a "Developer ID Application: ..."
+# identity (or its SHA-1 hash, which is what you need when two of them share a
+# name) and SILL_NOTARY_PROFILE to a notarytool keychain profile, created once
+# with:
+#   xcrun notarytool store-credentials <profile> --apple-id <id> \
+#       --team-id <team> --password <app-specific-password>
+# With both set this signs the app with the hardened runtime, signs the image,
+# submits it, waits, and staples the ticket.
+#
+# Unnotarised, Gatekeeper blocks the first launch, and since macOS 15 the old
+# right-click > Open bypass is gone: the user has to go to System Settings >
+# Privacy & Security > Open Anyway.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -26,7 +32,13 @@ hdiutil create -volname "Sill" -srcfolder "$STAGING" -ov -format UDZO \
 rm -rf "$STAGING"
 
 if [[ -n "${SILL_SIGN_IDENTITY:-}" ]]; then
-    codesign --force --sign "$SILL_SIGN_IDENTITY" "$DMG"
+    codesign --force --timestamp --sign "$SILL_SIGN_IDENTITY" "$DMG"
+fi
+
+if [[ -n "${SILL_NOTARY_PROFILE:-}" ]]; then
+    xcrun notarytool submit "$DMG" --keychain-profile "$SILL_NOTARY_PROFILE" --wait
+    xcrun stapler staple "$DMG"
+    spctl -a -vvv -t open --context context:primary-signature "$DMG"
 fi
 
 echo "built $DMG ($(du -h "$DMG" | cut -f1))"

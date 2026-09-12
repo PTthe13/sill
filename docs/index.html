@@ -75,6 +75,11 @@
           font-size: 15px; padding: 14px 26px; border-radius: 999px }
   .ghost { text-decoration: none; font-size: 14.5px; color: var(--muted) }
   .note { font-size: 13px; color: var(--muted) }
+  .gate { max-width: 62ch; margin: 26px auto 0; border: 1px solid var(--line);
+          border-radius: 12px; padding: 18px 20px; background: var(--card); text-align: left }
+  .gate h2 { margin: 0 0 8px; font-size: 14px; font-weight: 600; letter-spacing: -0.005em }
+  .gate p { margin: 0 0 10px; font-size: 13.5px; line-height: 1.6; color: var(--muted) }
+  .gate ol { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.75; color: var(--muted) }
   .cards { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 18px; padding: 72px 0 0 }
   .card { border: 1px solid var(--line); border-radius: 14px; padding: 26px 24px; background: var(--card) }
   .card h3 { margin: 0 0 10px; font-size: 17px; font-weight: 600; letter-spacing: -0.01em }
@@ -140,7 +145,18 @@
     <div class="cta-row">
       <a class="pill" href="https://github.com/PTthe13/sill/releases/latest" data-t="cta">Download for Mac</a>
       <a class="ghost" href="https://github.com/PTthe13/sill" data-t="source">View source on GitHub</a>
-      <span class="note" data-t="ctaNote">macOS 14+ · 1.1 MB · free</span>
+      <span class="note" data-t="ctaNote">macOS 14+ · 1.2 MB · free</span>
+
+      <div class="gate">
+        <h2 data-t="gateTitle">First launch will be blocked. That is expected.</h2>
+        <p data-t="gateBody">Sill is signed with a Developer ID, but it is not notarised — Apple's notary service never saw this build — so macOS refuses to open it until you say so yourself. Once:</p>
+        <ol>
+          <li data-t="gate1">Open Sill. macOS says it could not be verified — click Done.</li>
+          <li data-t="gate2">Go to System Settings → Privacy &amp; Security and scroll to the bottom.</li>
+          <li data-t="gate3">Next to "Sill was blocked", click Open Anyway and authenticate.</li>
+          <li data-t="gate4">Open Sill again. It launches, and never asks again.</li>
+        </ol>
+      </div>
     </div>
   </section>
 
@@ -154,7 +170,7 @@
     <div class="stat"><b data-t="s1v">0.26%</b><span data-t="s1l">of one core, idle</span></div>
     <div class="stat"><b data-t="s2v">13 MB</b><span data-t="s2l">memory</span></div>
     <div class="stat"><b data-t="s3v">0</b><span data-t="s3l">permissions</span></div>
-    <div class="stat"><b data-t="s4v">1.1 MB</b><span data-t="s4l">download</span></div>
+    <div class="stat"><b data-t="s4v">1.2 MB</b><span data-t="s4l">download</span></div>
   </section>
 
   <div class="strip"><img src="assets/wave-dark.png" alt="A horizontal Sill band, load ramp"></div>
@@ -169,7 +185,13 @@ const COPY = {
     headline: "Your Mac's load, on the wallpaper.",
     sub: "A wave along one edge of the desktop. Shape is processor load, density is memory, colour is effort — the last quarter of an hour, always in view.",
     chip: "42% cpu · 71% memory · 3m ago",
-    cta: "Download for Mac", source: "View source on GitHub", ctaNote: "macOS 14+ · 1.1 MB · free",
+    cta: "Download for Mac", source: "View source on GitHub", ctaNote: "macOS 14+ · 1.2 MB · free",
+    gateTitle: "First launch will be blocked. That is expected.",
+    gateBody: "Sill is signed with a Developer ID, but it is not notarised — Apple's notary service never saw this build — so macOS refuses to open it until you say so yourself. Once:",
+    gate1: "Open Sill. macOS says it could not be verified — click Done.",
+    gate2: "Go to System Settings → Privacy & Security and scroll to the bottom.",
+    gate3: "Next to \"Sill was blocked\", click Open Anyway and authenticate.",
+    gate4: "Open Sill again. It launches, and never asks again.",
     c1t: "Point at the past",
     c1b: "Hover any moment on the wave and it reports what the machine was doing then — and names the process, if one was eating it.",
     c2t: "Survives your wallpaper",
@@ -177,7 +199,7 @@ const COPY = {
     c3t: "Asks for nothing",
     c3b: "No permission prompts, no privileged helper, no admin password. It stops sampling entirely when nothing can see it.",
     s1v: "0.26%", s1l: "of one core, idle", s2v: "13 MB", s2l: "memory",
-    s3v: "0", s3l: "permissions", s4v: "1.1 MB", s4l: "download",
+    s3v: "0", s3l: "permissions", s4v: "1.2 MB", s4l: "download",
     footer: "MIT · macOS 14 or later · Apple silicon and Intel"
   },
   pt: {
@@ -185,7 +207,13 @@ const COPY = {
     headline: "A carga do seu Mac, no wallpaper.",
     sub: "Uma onda ao longo de um lado do ecrã. A forma é a carga, a densidade é a memória, a cor é o esforço — o último quarto de hora, sempre à vista.",
     chip: "42% cpu · 71% memória · há 3m",
-    cta: "Descarregar para Mac", source: "Ver o código no GitHub", ctaNote: "macOS 14+ · 1,1 MB · gratuito",
+    cta: "Descarregar para Mac", source: "Ver o código no GitHub", ctaNote: "macOS 14+ · 1,2 MB · gratuito",
+    gateTitle: "O primeiro arranque vai ser bloqueado. É esperado.",
+    gateBody: "O Sill está assinado com um Developer ID, mas não está notarizado — o serviço da Apple nunca viu esta build — por isso o macOS recusa-se a abri-lo até você autorizar. Uma vez só:",
+    gate1: "Abra o Sill. O macOS diz que não pôde ser verificado — carregue em Done.",
+    gate2: "Vá a Definições do Sistema → Privacidade e Segurança e desça até ao fim.",
+    gate3: "Ao lado de \"Sill was blocked\", carregue em Open Anyway e autentique-se.",
+    gate4: "Abra o Sill outra vez. Arranca, e nunca mais pergunta.",
     c1t: "Apontar ao passado",
     c1b: "Passe o rato sobre qualquer instante da onda e ela diz o que a máquina fazia — e nomeia o processo, se algum a consumia.",
     c2t: "Sobrevive ao seu wallpaper",
@@ -193,7 +221,7 @@ const COPY = {
     c3t: "Não pede nada",
     c3b: "Sem permissões, sem helper privilegiado, sem palavra-passe. Deixa de amostrar quando ninguém o vê.",
     s1v: "0,26%", s1l: "de um núcleo, parado", s2v: "13 MB", s2l: "memória",
-    s3v: "0", s3l: "permissões", s4v: "1,1 MB", s4l: "descarga",
+    s3v: "0", s3l: "permissões", s4v: "1,2 MB", s4l: "descarga",
     footer: "MIT · macOS 14 ou posterior · Apple silicon e Intel"
   }
 };

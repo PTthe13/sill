@@ -21,6 +21,25 @@ slices along its length, and adapts as it goes — bright strands over a dark
 stretch of desktop, deep ones over a bright one, with a contrast hairline where
 the wallpaper is busy. Nothing to configure.
 
+## Install
+
+Download the DMG from [Releases](https://github.com/PTthe13/sill/releases/latest), open it, drag Sill to Applications.
+
+**The first launch will be blocked.** The app is signed with a Developer ID but
+it is not notarised — Apple's notary service never saw this build — so macOS
+refuses to open it until you say so explicitly:
+
+1. Open Sill. macOS says it "could not be verified". Click **Done**.
+2. Go to **System Settings → Privacy & Security**, scroll to the bottom.
+3. Next to "Sill was blocked", click **Open Anyway**, and authenticate.
+4. Open Sill again. It launches, and never asks again.
+
+On macOS 14 the older right-click → **Open** shortcut still works. From macOS 15
+onwards Apple removed it, so the System Settings route above is the only one.
+
+Nothing else is installed: no helper, no background service, no login item
+unless you switch one on in Settings. Deleting the app is the uninstall.
+
 ## What it costs
 
 Measured, not estimated — one band, ten idle minutes, on an M-series Mac:

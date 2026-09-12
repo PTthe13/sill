@@ -33,8 +33,15 @@ cp Resources/Info.plist "$APP/Contents/Info.plist"
 printf 'APPL????' > "$APP/Contents/PkgInfo"
 [[ -f Resources/Sill.icns ]] && cp Resources/Sill.icns "$APP/Contents/Resources/Sill.icns"
 
-# Ad-hoc signature: enough to run locally. Distribution needs a Developer ID
-# identity and notarisation (see NOTES.md).
-codesign --force --deep --sign "${SILL_SIGN_IDENTITY:--}" "$APP" >/dev/null 2>&1
+# Ad-hoc by default: enough to run locally. With SILL_SIGN_IDENTITY set to a
+# "Developer ID Application: ..." identity, sign for distribution instead —
+# hardened runtime and a secure timestamp, both of which notarisation requires.
+if [[ -n "${SILL_SIGN_IDENTITY:-}" ]]; then
+    codesign --force --options runtime --timestamp \
+             --sign "$SILL_SIGN_IDENTITY" "$APP"
+    codesign --verify --strict --verbose=1 "$APP"
+else
+    codesign --force --deep --sign - "$APP" >/dev/null 2>&1
+fi
 
 echo "built $APP ($(du -sh "$APP" | cut -f1))"
