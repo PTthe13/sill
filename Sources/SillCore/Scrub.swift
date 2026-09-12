@@ -17,8 +17,8 @@ public enum Scrub {
                              visible: Int? = nil) -> Int {
         guard count > 0 else { return 0 }
         let shown = min(count, max(1, visible ?? count))
-        let clamped = min(1, max(0, Double(fraction)))
-        let fromOldestShown = Int((clamped * Double(shown - 1)).rounded())
+        let clamped = fraction.isFinite ? min(1, max(0, Double(fraction))) : 0
+        let fromOldestShown = (clamped * Double(shown - 1)).roundedInt
         return min(count - 1, max(0, count - shown + fromOldestShown))
     }
 
@@ -30,10 +30,11 @@ public enum Scrub {
 
     /// "now", "20s ago", "4m ago", "1h 05m ago" — short enough for a chip.
     public static func ageText(_ seconds: TimeInterval) -> String {
+        guard seconds.isFinite else { return "now" }
         let value = max(0, seconds.rounded())
         if value < 5 { return "now" }
-        if value < 60 { return "\(Int(value))s ago" }
-        let minutes = Int((value / 60).rounded(.down))
+        if value < 60 { return "\(value.roundedInt)s ago" }
+        let minutes = (value / 60).rounded(.down).roundedInt
         if minutes < 60 { return "\(minutes)m ago" }
         return String(format: "%dh %02dm ago", minutes / 60, minutes % 60)
     }
@@ -43,16 +44,16 @@ public enum Scrub {
     public static func label(envelope: Double, fill: Double, secondsAgo: TimeInterval,
                              envelopeMetric: Metric = .cpu,
                              fillMetric: Metric = .memory) -> String {
-        "\(Int(envelope.rounded()))% \(envelopeMetric.shortName) · "
-            + "\(Int(fill.rounded()))% \(fillMetric.shortName) · "
+        "\(envelope.roundedInt)% \(envelopeMetric.shortName) · "
+            + "\(fill.roundedInt)% \(fillMetric.shortName) · "
             + ageText(secondsAgo)
     }
 
     /// How much history the whole band holds, for the panel's summary line.
     public static func spanText(sampleCount: Int, interval: TimeInterval) -> String {
         let seconds = Double(max(0, sampleCount - 1)) * interval
-        if seconds < 90 { return "\(Int(seconds.rounded()))s" }
-        let minutes = Int((seconds / 60).rounded())
+        if seconds < 90 { return "\(seconds.roundedInt)s" }
+        let minutes = (seconds / 60).roundedInt
         if minutes < 60 { return "\(minutes)m" }
         return String(format: "%dh %02dm", minutes / 60, minutes % 60)
     }

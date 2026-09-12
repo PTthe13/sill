@@ -2,6 +2,12 @@ import Foundation
 @testable import SillCore
 
 struct MetricTests {
+    func ratesPrintSomethingSaneForNonsense() {
+        expect(Format.throughput(bytesPerSecond: .nan) == "0.0 MB/s")
+        expect(Format.rate(bytesPerSecond: .infinity) == "0.0")
+        expect(Scrub.ageText(.nan) == "now")
+    }
+
     func theRatePeakFadesInSecondsNotInSamples() {
         // Same two minutes of quiet, taken at two different sample rates: the
         // scale has to end up in the same place, or a band set to a long

@@ -2,6 +2,14 @@ import CoreGraphics
 @testable import SillCore
 
 struct PaletteTests {
+    func headroomSurvivesNonsenseReadings() {
+        // A sampler dividing by a zero interval yields NaN, and Int(NaN) traps.
+        expect(Headroom.value(cpuPercent: .nan, memoryPercent: 20) == 91)
+        expect(Headroom.value(cpuPercent: .infinity, memoryPercent: .nan) == 100)
+        expect(Headroom.value(cpuPercent: -50, memoryPercent: 400) == 55)
+        expect(!Headroom.title(cpuPercent: .nan, memoryPercent: .nan).isEmpty)
+    }
+
     let dark = Palette.assumedLuminance
     let light = 0.85
 

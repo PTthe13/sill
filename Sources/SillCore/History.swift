@@ -17,7 +17,10 @@ public struct History: Sendable {
     }
 
     public mutating func push(_ value: Double) {
-        values.append(value)
+        // Nothing non-finite is ever allowed into the history: a NaN here
+        // spreads through the smoothing into path coordinates and gradient
+        // stops, where Core Graphics quietly draws nothing at all.
+        values.append(value.isFinite ? value : 0)
         if values.count > capacity { values.removeFirst(values.count - capacity) }
         filled = min(capacity, filled + 1)
     }

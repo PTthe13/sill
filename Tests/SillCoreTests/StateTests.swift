@@ -9,6 +9,15 @@ struct HistoryTests {
         expect(h.newest == 4)
     }
 
+    func nonsenseNeverEntersTheHistory() {
+        // A NaN in the ring becomes a NaN path coordinate, and Core Graphics
+        // draws nothing at all rather than complaining.
+        var h = History(capacity: 3, filledWith: 0)
+        h.push(.nan); h.push(.infinity); h.push(7)
+        expect(h.values.allSatisfy { $0.isFinite }, "\(h.values)")
+        expect(h.newest == 7)
+    }
+
     func countsOnlyWhatWasActuallyMeasured() {
         var h = History(capacity: 4, filledWith: 40)
         expect(h.filled == 0, "a seeded ring has measured nothing")
