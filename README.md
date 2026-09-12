@@ -46,7 +46,7 @@ Measured, not estimated — one band, ten idle minutes, on an M-series Mac:
 
 | | |
 | --- | --- |
-| CPU, idle | 0.26% of one core |
+| CPU, idle | 0.27% of one core once settled; about twice that for the first ten minutes, while the history fills |
 | Memory | 13 MB, or 20 MB once the detail panel has been opened |
 | Download | 1.1 MB, universal, no runtime |
 | Permissions | none — no Screen Recording, no Accessibility, no helper |
