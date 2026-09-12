@@ -37,6 +37,8 @@ final class WaveLayerController {
     private var variation: Double = 0
     private var lastDepths: [[Double]] = []
     private var history: (cpu: [Double], memory: [Double]) = ([], [])
+    /// How many of those samples were measured rather than seeded.
+    private var available: Int = 0
     private var sampleInterval: TimeInterval = 1
     private var hoverFraction: CGFloat?
     private var envelopeMetric: Metric = .cpu
@@ -380,8 +382,10 @@ final class WaveLayerController {
     private func updateChip(force: Bool = false) {
         guard let fraction = hoverFraction, !history.cpu.isEmpty else { return }
         // Only the samples this band has room for are on screen to point at.
+        // Only as far back as the band actually draws: on a young band that is
+        // fewer samples than the strip is long.
         let index = Scrub.index(alongFraction: fraction, count: history.cpu.count,
-                                visible: sampleCount)
+                                visible: min(sampleCount, max(2, available)))
         // A pointer sliding along the band crosses many pixels per sample:
         // re-measuring and re-committing for each of them is wasted work.
         guard force || index != chipIndex else { return }
@@ -439,6 +443,7 @@ final class WaveLayerController {
                              presented.m41, presented.m42))
         }
         history = (frame.cpu, frame.memory)
+        available = frame.available
         if interval > 0 { sampleInterval = interval }
         if hoverFraction != nil, isHovered { updateChip(force: true) }
         let depths = frame.depths

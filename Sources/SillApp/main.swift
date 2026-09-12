@@ -155,6 +155,26 @@ if let index = CommandLine.arguments.firstIndex(of: "--click"),
     exit(0)
 }
 
+// `sill --exposed` reports which part of the band's own strip is covered by
+// other apps' windows. The band is desktop-level, so anything on top of it
+// hides it and suspends sampling — which looks exactly like a drawing bug
+// unless you can see the coverage.
+if CommandLine.arguments.contains("--exposed") {
+    let settings = SillSettings()
+    for screen in NSScreen.screens {
+        let info = Screens.info(for: screen)
+        let band = Layout.waveFrame(edge: settings.edge, visibleFrame: info.visibleFrame,
+                                    fraction: settings.lengthFraction,
+                                    screenFrame: info.frame)
+        let occupied = ExposedDesktop.occupiedFrames(on: info.visibleFrame)
+        let covered = PanelPlacement.coverage(of: band, by: occupied)
+        print(String(format: "%-28s band %@ covered %.0f%% by %d window(s)",
+                     (info.name as NSString).utf8String!, band.debugDescription,
+                     covered * 100, occupied.count))
+    }
+    exit(0)
+}
+
 // `sill --backdrop` reports how light each display's wallpaper is behind the
 // band, and what that does to the strands.
 if CommandLine.arguments.contains("--backdrop") {

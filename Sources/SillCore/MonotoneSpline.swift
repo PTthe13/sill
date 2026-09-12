@@ -122,18 +122,23 @@ public enum Curve {
     /// Takes a collection so a band can draw a slice of a longer shared history
     /// — a band on a small display has no use for samples that fall off its end.
     @inlinable
+    /// `alongOffset` shifts the whole curve down the band. A band with less
+    /// history than it has room for uses it to keep its newest sample at the
+    /// newest end, leaving the gap at the old end where the missing time
+    /// actually belongs.
     public static func path<C: RandomAccessCollection>(depths: C, transform: EdgeTransform,
-                                                       step: CGFloat = WaveGeometry.step) -> CGPath
+                                                       step: CGFloat = WaveGeometry.step,
+                                                       alongOffset: CGFloat = 0) -> CGPath
     where C.Element == Double, C.Index == Int {
         let path = CGMutablePath()
         guard let firstDepth = depths.first else { return path }
         let m = tangents(depths, step: Double(step))
-        path.move(to: transform.point(along: 0, depth: CGFloat(firstDepth)))
+        path.move(to: transform.point(along: alongOffset, depth: CGFloat(firstDepth)))
         guard depths.count > 1 else { return path }
 
         let base = depths.startIndex
         for i in 1..<depths.count {
-            let a0 = CGFloat(i - 1) * step, a1 = CGFloat(i) * step
+            let a0 = alongOffset + CGFloat(i - 1) * step, a1 = alongOffset + CGFloat(i) * step
             let third = step / 3
             let previous = depths[base + i - 1], current = depths[base + i]
             let c1 = transform.point(along: a0 + third,

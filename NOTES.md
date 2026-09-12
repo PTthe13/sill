@@ -466,18 +466,35 @@ idle and under 100MB of RAM". Sill is 14 MB.
 
 ## The wave was being extruded from the wrong end
 
-Two separate mistakes, both visible only on a running band, both reported by the
-user before a test caught them.
+The band drew fifteen minutes of history it had never measured. `History` starts
+full — a ring pre-seeded so the wave has something to draw — so a fresh launch
+showed a dead-flat line at 0% CPU stretching back through time nobody watched,
+with the real readings entering at one end. That is what "it builds downwards"
+was: not motion, but a lie unspooling.
 
-`EdgeTransform.scrollPerSample` pointed the wrong way. The bundle's translation
-must carry a sample AWAY from the end where new readings land: a sample at
-`along` is one step further along a tick later, so the vector has to equal
-`point(along + step) - point(along)`. It was the negation of that, so history
-crawled toward the live end while new samples pushed the other way — which reads
-as the band being extruded downwards while the strands slide up. The unit test
-that should have caught it aged a sample BACKWARDS (`along: 10` then `along: 9`)
-and so asserted the bug. Both are fixed, and the test now states the invariant in
-the direction time actually runs.
+It now draws only what it measured. `History` counts real pushes (`filled`),
+`Frame` carries that count, and the strand paths are clipped to it — and, since
+index 0 is drawn at `along = 0` (the OLDEST end), they are also pushed down the
+band by `(sampleCount - measured) * step` so the newest sample still sits at the
+newest end and the gap is left where the missing time belongs. The panel's
+"shown" figure is clamped the same way, and the hover readout cannot scrub into
+the blank stretch.
+
+**A sign I got wrong twice, and the measurement that settled it.** I decided
+`scrollPerSample` was inverted and flipped it, reasoning that a sample's `along`
+grows as it ages. It does not. Histories are oldest-first in a fixed ring drawn
+from index 0, so when a reading arrives the oldest is dropped and every survivor
+moves DOWN one index — one step closer to `along = 0`. The original sign was
+right; my "fix" made the translation fight the redraw, which reads as a band
+that shivers instead of drifting. It shipped that way in the first v1.0 disk
+image, for about an hour.
+
+What settled it was not more reasoning. Loading the machine hard for twelve
+seconds and photographing the band puts the wide red strands at exactly one end,
+and they were at the bottom: newest at the bottom of a vertical band, history
+ageing upwards, `scrollPerSample` positive. The comments on both members now say
+so, and the test asserts the invariant with an ageing — not a rejuvenating —
+sample.
 
 The band also sat on the wrong window level. `desktopIconWindow + 1` put it above
 the icons on the desktop, so a strand crossed a file's name. The band is scenery:
@@ -492,6 +509,23 @@ most visibly the Dock, which centres on the whole display. It now insets from th
 visible frame on the edge it hugs, so it still clears the Dock and the menu bar,
 but centres on `NSScreen.frame`, clamped so a full-length band can never be
 pushed under the menu bar. `ScreenInfo` carries both rectangles for this.
+
+## What the sweep covered
+
+Every edge x three widths against computed geometry; all five ramps; all three
+backgrounds; area fill; all twenty-five shape/fill metric pairs; five history
+spans; both materials; dimming on and off — driven through `defaults` and
+`--reload` on the running app, checking the window frame each time rather than
+trusting that a setting was applied. Then, on the live band: the panel on all
+four edges, the hover chevron, the scrub readout, Settings fitting without a
+scroll bar, one band per display and a band pinned to a chosen display, the
+first-run hint, and the disk and network samplers under real load (2.8 MB/s
+write under `dd`, 3.1 MB/s down under `curl`).
+
+Two apparent failures were the desk, not the app: a band under a window draws
+nothing and suspends sampling, by design. `sill --exposed` was added to report
+exactly how much of the band another window is covering, so that case stops
+looking like a drawing bug.
 
 ## Not verified, and why
 

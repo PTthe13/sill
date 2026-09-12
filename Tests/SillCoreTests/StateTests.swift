@@ -9,6 +9,24 @@ struct HistoryTests {
         expect(h.newest == 4)
     }
 
+    func countsOnlyWhatWasActuallyMeasured() {
+        var h = History(capacity: 4, filledWith: 40)
+        expect(h.filled == 0, "a seeded ring has measured nothing")
+        h.push(1); h.push(2)
+        expect(h.filled == 2)
+        h.push(3); h.push(4); h.push(5)
+        expect(h.filled == 4, "never more than the ring holds")
+    }
+
+    func shrinkingCannotLeaveMoreMeasuredThanCapacity() {
+        var h = History(capacity: 6, filledWith: 0)
+        for i in 1...6 { h.push(Double(i)) }
+        h.resize(to: 2)
+        expect(h.filled == 2)
+        h.resize(to: 8)
+        expect(h.filled == 2, "growing does not invent measurements")
+    }
+
     func startsFullSoTheWaveHasSomethingToDraw() {
         expect(History(capacity: 5, filledWith: 12).values == [12, 12, 12, 12, 12])
     }

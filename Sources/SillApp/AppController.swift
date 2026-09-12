@@ -183,7 +183,9 @@ final class AppController: NSObject, NSApplicationDelegate {
         if !visible.isEmpty {
             let series = engine.series(envelope: settings.envelopeMetric,
                                        fill: settings.fillMetric)
-            let frame = WaveModel.Frame(cpu: series.envelope, memory: series.fill)
+            let frame = WaveModel.Frame(cpu: series.envelope, memory: series.fill,
+                                        available: engine.measured(envelope: settings.envelopeMetric,
+                                                                   fill: settings.fillMetric))
             for band in visible {
                 band.wave.update(frame: frame, interval: interval, tickTime: time)
             }
@@ -216,7 +218,11 @@ final class AppController: NSObject, NSApplicationDelegate {
             ?? engine.fullScaleText(for: settings.fillMetric)
         // The band the panel belongs to, not the longest one on the desk.
         let shown = openBand?.wave.sampleCount ?? engine.cpu.values.count
-        model.historySpan = Scrub.spanText(sampleCount: min(shown, engine.cpu.values.count),
+        // Never claim more history than was measured: a band two minutes into
+        // its life covers two minutes, however long the strip is.
+        let measured = engine.measured(envelope: settings.envelopeMetric,
+                                       fill: settings.fillMetric)
+        model.historySpan = Scrub.spanText(sampleCount: min(shown, measured),
                                            interval: engine.effectiveInterval
                                                ?? settings.sampleInterval)
 
@@ -376,7 +382,9 @@ final class AppController: NSObject, NSApplicationDelegate {
         let visible = bands.filter(\.isVisible)
         guard !visible.isEmpty else { return }
         let series = engine.series(envelope: settings.envelopeMetric, fill: settings.fillMetric)
-        let frame = WaveModel.Frame(cpu: series.envelope, memory: series.fill)
+        let frame = WaveModel.Frame(cpu: series.envelope, memory: series.fill,
+                                    available: engine.measured(envelope: settings.envelopeMetric,
+                                                               fill: settings.fillMetric))
         for band in visible {
             band.wave.update(frame: frame, interval: 0, tickTime: CACurrentMediaTime())
         }

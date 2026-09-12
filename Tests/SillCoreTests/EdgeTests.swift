@@ -38,21 +38,22 @@ struct EdgeTests {
     }
 
     func scrollDirectionMatchesTimeDirection() {
-        // History moves away from the end new samples land on: down a vertical
-        // band, leftward along a horizontal one.
-        expect(transform(.left).scrollPerSample == CGVector(dx: 0, dy: -4))
-        expect(transform(.right).scrollPerSample == CGVector(dx: 0, dy: -4))
-        expect(transform(.top).scrollPerSample == CGVector(dx: -4, dy: 0))
-        expect(transform(.bottom).scrollPerSample == CGVector(dx: -4, dy: 0))
+        // Ageing moves a sample DOWN the history (the oldest is dropped each
+        // tick), so it travels toward `along = 0` — the oldest end.
+        expect(transform(.left).scrollPerSample == CGVector(dx: 0, dy: 4))
+        expect(transform(.right).scrollPerSample == CGVector(dx: 0, dy: 4))
+        expect(transform(.top).scrollPerSample == CGVector(dx: 4, dy: 0))
+        expect(transform(.bottom).scrollPerSample == CGVector(dx: 4, dy: 0))
     }
 
     func scrollMovesAnAgeingSampleExactlyOneStep() {
         for edge in ScreenEdge.allCases {
             let t = transform(edge)
-            // One tick later the same sample is one step OLDER, so `along`
-            // grows: where it lands must be the scroll vector away.
-            let before = t.point(along: 9 * WaveGeometry.step, depth: 20)
-            let after = t.point(along: 10 * WaveGeometry.step, depth: 20)
+            // One tick later the ring has dropped its oldest sample, so this
+            // one has moved one index — one step — closer to `along = 0`.
+            // Where it lands must be exactly the scroll vector away.
+            let before = t.point(along: 10 * WaveGeometry.step, depth: 20)
+            let after = t.point(along: 9 * WaveGeometry.step, depth: 20)
             let scroll = t.scrollPerSample
             expect(approx(after.x, before.x + scroll.dx), "\(edge)")
             expect(approx(after.y, before.y + scroll.dy), "\(edge)")

@@ -61,13 +61,17 @@ public struct EdgeTransform: Equatable, Sendable {
 
     public var size: CGSize { WaveGeometry.size(edge: edge, length: length) }
 
+    /// Where a sample sits in the band, given how far along the strip it is.
+    ///
+    /// `along` is measured from the OLDEST end: histories are oldest-first and
+    /// index 0 lands at `along = 0`, so the oldest sample is at y = length (the
+    /// top of a vertical band) and the newest at y = 0 (the bottom). Verified
+    /// on a running band by loading the machine and watching which end the
+    /// wide red strands appear at.
     public func point(along: CGFloat, depth: CGFloat) -> CGPoint {
         switch edge {
-        // Band-local y is up, so `length - along` puts the newest sample at the
-        // top of a vertical band and the oldest at the bottom.
         case .left:   return CGPoint(x: depth, y: length - along)
         case .right:  return CGPoint(x: thickness - depth, y: length - along)
-        // Horizontal: newest at the right, the way every chart is read.
         case .top:    return CGPoint(x: length - along, y: thickness - depth)
         case .bottom: return CGPoint(x: length - along, y: depth)
         }
@@ -75,14 +79,22 @@ public struct EdgeTransform: Equatable, Sendable {
 
     /// Distance and direction the whole bundle travels over one sample interval.
     ///
-    /// History moves AWAY from the end where new samples land, never toward it:
-    /// down a vertical band (newest at the top) and leftward along a horizontal
-    /// one (newest at the right). Getting this sign backwards makes the wave
-    /// look like it is being extruded from the wrong end.
+    /// History moves AWAY from the end where new samples land, never toward it.
+    ///
+    /// It has to equal what the next redraw does to a sample that is already
+    /// drawn, or the translation fights the redraw and the band looks static
+    /// with a shiver rather than moving.
+    ///
+    /// Histories are oldest-first in a fixed-size ring, and index 0 is drawn
+    /// at `along = 0`. When a new reading arrives the oldest is dropped, so
+    /// every surviving sample's index — and therefore its `along` — goes DOWN
+    /// by one step. That is `point(along - step) - point(along)`: up a
+    /// vertical band, rightward along a horizontal one, away from the newest
+    /// end.
     public var scrollPerSample: CGVector {
         switch edge {
-        case .left, .right: return CGVector(dx: 0, dy: -WaveGeometry.step)
-        case .top, .bottom: return CGVector(dx: -WaveGeometry.step, dy: 0)
+        case .left, .right: return CGVector(dx: 0, dy: WaveGeometry.step)
+        case .top, .bottom: return CGVector(dx: WaveGeometry.step, dy: 0)
         }
     }
 

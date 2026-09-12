@@ -111,6 +111,13 @@ final class SampleEngine {
         (histories[envelope]?.values ?? cpu.values, histories[fill]?.values ?? memory.values)
     }
 
+    /// How many of the newest samples in `series` were actually measured. A
+    /// band draws no further back than this, so a fresh launch grows in from
+    /// the live end rather than claiming a flat stretch it never saw.
+    func measured(envelope: Metric, fill: Metric) -> Int {
+        min(histories[envelope]?.filled ?? cpu.filled, histories[fill]?.filled ?? memory.filled)
+    }
+
     /// What full height means for a rate metric, for the panel to state.
     func fullScaleText(for metric: Metric) -> String? {
         switch metric {

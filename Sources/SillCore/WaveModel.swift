@@ -77,6 +77,12 @@ public struct WaveModel: Sendable {
         public let memory: [Double]
         public let depths: [[Double]]
         public let loads: [Double]
+        /// How many of the newest samples were measured rather than seeded.
+        /// The band draws only these, so on a fresh launch it grows in from
+        /// the live end instead of showing a flat line through time nobody
+        /// watched. Defaults to everything, which is what the offscreen
+        /// renderer and the settings preview want.
+        public let available: Int
 
         /// The nine strand paths for one band.
         ///
@@ -85,17 +91,27 @@ public struct WaveModel: Sendable {
         /// witnesses for every point access, which showed up in a profile as
         /// the single hottest thing Sill does.
         public func paths(transform: EdgeTransform, sampleCount: Int) -> [CGPath] {
-            depths.map { strand in
-                let slice = strand.count > sampleCount ? strand.suffix(sampleCount)
-                                                       : strand[strand.startIndex...]
-                return Curve.path(depths: slice, transform: transform)
+            // Two points is the least a curve can be drawn through; below that
+            // the band is simply empty for a second.
+            let wanted = min(sampleCount, max(0, available))
+            guard wanted >= 2 else { return depths.map { _ in CGMutablePath() } }
+            // Index 0 is drawn at `along = 0`, the OLDEST end, so a short
+            // history has to start further down the band — otherwise the newest
+            // sample lands where the oldest belongs and the wave grows from the
+            // wrong end.
+            let offset = CGFloat(max(0, sampleCount - wanted)) * WaveGeometry.step
+            return depths.map { strand in
+                let slice = strand.count > wanted ? strand.suffix(wanted)
+                                                  : strand[strand.startIndex...]
+                return Curve.path(depths: slice, transform: transform, alongOffset: offset)
             }
         }
 
         public init(cpu: [Double], memory: [Double], thickness: CGFloat = WaveGeometry.thickness,
-                    sliceCount: Int = Palette.profileSlices) {
+                    sliceCount: Int = Palette.profileSlices, available: Int? = nil) {
             self.cpu = cpu
             self.memory = memory
+            self.available = available ?? cpu.count
             let smoothedCPU = Curve.smooth(cpu)
             self.depths = WaveModel(thickness: thickness)
                 .allDepths(smoothedCPU: smoothedCPU, smoothedMemory: Curve.smooth(memory))
