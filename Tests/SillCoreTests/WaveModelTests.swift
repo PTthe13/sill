@@ -2,25 +2,31 @@ import CoreGraphics
 @testable import SillCore
 
 struct WaveModelTests {
-    func drawsOnlyTheSamplesThatWereMeasured() {
-        let cpu = (0..<40).map { _ in 50.0 }
-        let frame = WaveModel.Frame(cpu: cpu, memory: cpu, available: 10)
+    func theUnmeasuredStretchIsAStillLineDownTheMiddle() {
+        let cpu = (0..<40).map { i in i % 2 == 0 ? 10.0 : 95.0 }
         let transform = EdgeTransform(edge: .right, length: 160)
-        let full = WaveModel.Frame(cpu: cpu, memory: cpu)
-            .paths(transform: transform, sampleCount: 40)[0].boundingBox
-        let young = frame.paths(transform: transform, sampleCount: 40)[0].boundingBox
-        // Same band, a quarter of the history: the drawn strand is shorter, and
-        // it hugs the NEWEST end — y = 0 on a right-hand band — with the gap
-        // left where the unmeasured time belongs.
-        expect(young.height < full.height * 0.4, "\(young) vs \(full)")
-        expect(young.minY <= full.minY + 0.001, "\(young) vs \(full)")
-        expect(young.maxY < full.maxY * 0.5, "\(young) vs \(full)")
+        let frame = WaveModel.Frame(cpu: cpu, memory: cpu, available: 10)
+        let young = frame.paths(transform: transform, sampleCount: 40)[0]
+        // Ten measured samples at the newest end, thirty slots of still line
+        // before them — not a blank stretch, and not invented readings.
+        let middle = Double(WaveGeometry.thickness / 2)
+        let expected = Curve.path(
+            depths: [Double](repeating: middle, count: 30) + frame.depths[0].suffix(10),
+            transform: transform)
+        expect(young == expected)
+        // And it still covers the whole strip.
+        expect(approx(young.boundingBox.height,
+                      frame.paths(transform: transform, sampleCount: 40)[0].boundingBox.height))
     }
 
-    func aBandWithOneMeasurementDrawsNothingYet() {
-        let frame = WaveModel.Frame(cpu: [10, 20, 30], memory: [10, 20, 30], available: 1)
-        let paths = frame.paths(transform: EdgeTransform(edge: .top, length: 120), sampleCount: 3)
-        expect(paths.allSatisfy { $0.isEmpty })
+    func aBandWithNoMeasurementsIsOneFlatLine() {
+        let frame = WaveModel.Frame(cpu: [10, 20, 30], memory: [10, 20, 30], available: 0)
+        let transform = EdgeTransform(edge: .top, length: 120)
+        for path in frame.paths(transform: transform, sampleCount: 30) {
+            expect(!path.isEmpty, "the band shows something from the first frame")
+            // Flat: no thickness across the band at all.
+            expect(path.boundingBox.height < 0.001, "\(path.boundingBox)")
+        }
     }
 
     let model = WaveModel()
@@ -164,16 +170,16 @@ struct FramePathTests {
         }
     }
 
-    func askingForMoreSamplesThanExistDrawsThemAllAtTheNewestEnd() {
+    func askingForMoreSamplesThanExistPadsTheRestWithStillLine() {
         let cpu = [Double](repeating: 40, count: 10)
         let frame = WaveModel.Frame(cpu: cpu, memory: cpu)
         let transform = EdgeTransform(edge: .top, length: 40)
         let paths = frame.paths(transform: transform, sampleCount: 500)
         expect(paths.allSatisfy { !$0.isEmpty })
-        // Every sample is drawn, pushed down the band so the newest still sits
-        // at the newest end and the unmeasured stretch is left blank.
-        let offset = CGFloat(500 - 10) * WaveGeometry.step
-        expect(paths[0] == Curve.path(depths: frame.depths[0], transform: transform,
-                                      alongOffset: offset))
+        // The ten samples it has, with the other 490 slots drawn down the
+        // middle of the band rather than left blank.
+        let middle = Double(WaveGeometry.thickness / 2)
+        let padded = [Double](repeating: middle, count: 490) + frame.depths[0]
+        expect(paths[0] == Curve.path(depths: padded, transform: transform))
     }
 }

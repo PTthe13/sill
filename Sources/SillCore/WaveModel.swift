@@ -78,11 +78,13 @@ public struct WaveModel: Sendable {
         public let depths: [[Double]]
         public let loads: [Double]
         /// How many of the newest samples were measured rather than seeded.
-        /// The band draws only these, so on a fresh launch it grows in from
-        /// the live end instead of showing a flat line through time nobody
-        /// watched. Defaults to everything, which is what the offscreen
+        /// Only these carry readings; the rest of the strip is drawn as a
+        /// still line. Defaults to everything, which is what the offscreen
         /// renderer and the settings preview want.
         public let available: Int
+        /// Band thickness the depths were built for, so the unmeasured stretch
+        /// can be drawn down its middle.
+        public let thickness: CGFloat
 
         /// The nine strand paths for one band.
         ///
@@ -91,19 +93,22 @@ public struct WaveModel: Sendable {
         /// witnesses for every point access, which showed up in a profile as
         /// the single hottest thing Sill does.
         public func paths(transform: EdgeTransform, sampleCount: Int) -> [CGPath] {
-            // Two points is the least a curve can be drawn through; below that
-            // the band is simply empty for a second.
+            // A band with no history yet is a still line down the middle of
+            // the strip, and the wave grows into it from the newest end as
+            // readings arrive. Drawing nothing instead reads as a broken app
+            // for the first few seconds, and drawing the seeded values would
+            // claim readings that were never taken.
             let wanted = min(sampleCount, max(0, available))
-            guard wanted >= 2 else { return depths.map { _ in CGMutablePath() } }
-            // Index 0 is drawn at `along = 0`, the OLDEST end, so a short
-            // history has to start further down the band — otherwise the newest
-            // sample lands where the oldest belongs and the wave grows from the
-            // wrong end.
-            let offset = CGFloat(max(0, sampleCount - wanted)) * WaveGeometry.step
+            let lead = max(0, sampleCount - wanted)
+            guard lead > 0 else {
+                return depths.map { Curve.path(depths: $0.suffix(sampleCount),
+                                               transform: transform) }
+            }
+            let middle = Double(thickness / 2)
             return depths.map { strand in
-                let slice = strand.count > wanted ? strand.suffix(wanted)
-                                                  : strand[strand.startIndex...]
-                return Curve.path(depths: slice, transform: transform, alongOffset: offset)
+                var padded = [Double](repeating: middle, count: lead)
+                if wanted > 0 { padded.append(contentsOf: strand.suffix(wanted)) }
+                return Curve.path(depths: padded, transform: transform)
             }
         }
 
@@ -112,6 +117,7 @@ public struct WaveModel: Sendable {
             self.cpu = cpu
             self.memory = memory
             self.available = available ?? cpu.count
+            self.thickness = thickness
             let smoothedCPU = Curve.smooth(cpu)
             self.depths = WaveModel(thickness: thickness)
                 .allDepths(smoothedCPU: smoothedCPU, smoothedMemory: Curve.smooth(memory))

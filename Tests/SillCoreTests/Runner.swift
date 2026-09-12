@@ -209,8 +209,8 @@ let allTests: [(String, () -> Void)] = [
     ("SpanTests.theSettingClampsToItsRange", { SpanTests().theSettingClampsToItsRange() }),
     ("IntroductionTests.theAppIntroducesItselfExactlyOnce", { IntroductionTests().theAppIntroducesItselfExactlyOnce() }),
     ("IntroductionTests.theIntroductionIsNotAPlacementSetting", { IntroductionTests().theIntroductionIsNotAPlacementSetting() }),
-    ("WaveModelTests.drawsOnlyTheSamplesThatWereMeasured", { WaveModelTests().drawsOnlyTheSamplesThatWereMeasured() }),
-    ("WaveModelTests.aBandWithOneMeasurementDrawsNothingYet", { WaveModelTests().aBandWithOneMeasurementDrawsNothingYet() }),
+    ("WaveModelTests.theUnmeasuredStretchIsAStillLineDownTheMiddle", { WaveModelTests().theUnmeasuredStretchIsAStillLineDownTheMiddle() }),
+    ("WaveModelTests.aBandWithNoMeasurementsIsOneFlatLine", { WaveModelTests().aBandWithNoMeasurementsIsOneFlatLine() }),
     ("WaveModelTests.mixSpansEnvelopeToEnvelope", { WaveModelTests().mixSpansEnvelopeToEnvelope() }),
     ("WaveModelTests.outerStrandsAreFirstAndLast", { WaveModelTests().outerStrandsAreFirstAndLast() }),
     ("WaveModelTests.fillMapping", { WaveModelTests().fillMapping() }),
@@ -224,5 +224,5 @@ let allTests: [(String, () -> Void)] = [
     ("PresmoothedDepthsTests.presmoothedMatchesSmoothingInside", { PresmoothedDepthsTests().presmoothedMatchesSmoothingInside() }),
     ("SharedFrameTests.aSharedFrameMatchesComputingItPerBand", { SharedFrameTests().aSharedFrameMatchesComputingItPerBand() }),
     ("FramePathTests.aFramesPathsMatchBuildingThemByHand", { FramePathTests().aFramesPathsMatchBuildingThemByHand() }),
-    ("FramePathTests.askingForMoreSamplesThanExistDrawsThemAllAtTheNewestEnd", { FramePathTests().askingForMoreSamplesThanExistDrawsThemAllAtTheNewestEnd() }),
+    ("FramePathTests.askingForMoreSamplesThanExistPadsTheRestWithStillLine", { FramePathTests().askingForMoreSamplesThanExistPadsTheRestWithStillLine() }),
 ]

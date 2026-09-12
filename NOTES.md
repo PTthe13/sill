@@ -527,6 +527,40 @@ nothing and suspends sampling, by design. `sill --exposed` was added to report
 exactly how much of the band another window is covering, so that case stops
 looking like a drawing bug.
 
+## Second pass: what hostile numbers found
+
+Feeding the core NaNs and infinities crashed it on the first call:
+`Headroom.value` converts to `Int`, and `Int(nan)` traps. Every reading in
+the panel and in the hover readout went through a conversion like that, so a
+single division by a zero-length interval anywhere in a sampler would have
+taken the app down. Measured values now round through a non-trapping helper,
+and `History.push` refuses non-finite values outright — a NaN in the ring
+becomes a NaN path coordinate, and Core Graphics then draws nothing at all
+without so much as a warning.
+
+Three more, all found by measuring rather than reading:
+
+- **The wallpaper was re-decoded per band rectangle.** The backdrop cache is
+  keyed on the rectangle, and decoding even a 512px proxy of a photograph
+  costs 110ms here, on the main thread. Fifteen steps of the width slider
+  cost 1.6s of work; they now cost 0.08s, because the decoded proxies are
+  cached per wallpaper.
+- **Switching the metric emptied the band.** Since histories are only kept
+  for the two metrics being drawn, pointing the wave at another one handed it
+  an empty history — which, now that the band only draws what it measured,
+  means an empty band for a quarter of an hour. CPU, memory, network and disk
+  are recorded from launch whether drawn or not (0.3ms a tick between them).
+  GPU is not: its accelerator statistics cost 2ms a read, which at one a
+  second would roughly double what Sill costs at rest.
+- **The rate scale decayed per sample, not per second.** A band set to an
+  hour of history takes a reading every twenty seconds, so its network scale
+  stayed pinned to a download that had finished hours before.
+
+Also: the open panel stops refreshing while it is not visible (the process
+table is 2.5ms a tick, the GPU another 2ms), the window no longer extends
+past the far edge of a small display, and the hover readout says nothing
+when the pointer is over the stretch a young band has not drawn yet.
+
 ## Not verified, and why
 
 - **The lock suspension itself.** The polling fix went in after the machine had
