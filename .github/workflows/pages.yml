@@ -1,0 +1,40 @@
+# Publishes docs/ to GitHub Pages.
+#
+# This replaces the legacy "pages build and deployment" workflow GitHub
+# generates on its own. That one is not editable, gave no way to retry a step,
+# and failed on `Failed to get ID Token ... Request timeout` — a timeout inside
+# GitHub's OIDC service, not the site. Owning the workflow means the id-token
+# permission is declared explicitly and a bad run can just be re-run.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+    paths: ['docs/**', '.github/workflows/pages.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never deploy two commits at once; let a newer push win, but let a running
+# deploy finish rather than leaving the site half-published.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+      - id: deploy
+        uses: actions/deploy-pages@v4
