@@ -154,7 +154,7 @@ struct PreferencesView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Slider(value: $model.lengthFraction,
                            in: PreferencesView.lengthRange, step: 0.05)
-                    Text("\(Int((model.lengthFraction * 100).rounded()))% of the screen")
+                    Text("\((model.lengthFraction * 100).roundedInt)% of the screen")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -169,7 +169,8 @@ struct PreferencesView: View {
                     Slider(value: $model.spanMinutes,
                            in: 0...Span.maximumMinutes, step: 1)
                     Text(model.spanMinutes <= 0 ? "as much as the band holds, a point a second"
-                         : "\(Int(model.spanMinutes)) minutes")
+                         : model.spanMinutes < 2 ? "1 minute"
+                         : "\(model.spanMinutes.roundedInt) minutes")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

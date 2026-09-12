@@ -1,6 +1,6 @@
 import Foundation
 
-extension Double {
+public extension Double {
     /// Rounds to `Int` without trapping.
     ///
     /// Every number in a panel or a readout came from a sampler, and a sampler

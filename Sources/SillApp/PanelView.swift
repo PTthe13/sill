@@ -104,7 +104,7 @@ struct PanelView: View {
         let columns = 3
         return LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10),
                                         count: columns), spacing: 10) {
-            tile("CPU", "\(Int(model.cpuPercent.rounded()))%")
+            tile("CPU", "\(model.cpuPercent.roundedInt)%")
             tile("Memory", model.memoryText)
             tile("GPU", model.gpuText)
             tile("Free", model.diskText)

@@ -57,7 +57,7 @@ final class PanelModel: ObservableObject {
     var diskWrite: String { Format.rate(bytesPerSecond: diskIO.up) }
     var spanText: String? { historySpan.map { "\($0) shown" } }
 
-    var gpuText: String { gpuPercent.map { "\(Int($0.rounded()))%" } ?? "—" }
+    var gpuText: String { gpuPercent.map { "\($0.roundedInt)%" } ?? "—" }
 
     var batteryText: String? {
         guard let batteryPercent else { return nil }
