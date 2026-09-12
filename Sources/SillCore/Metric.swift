@@ -41,7 +41,12 @@ public enum Metric: String, CaseIterable, Codable, Sendable {
 public struct RateScale: Sendable {
     /// The smallest full scale to use, so idle noise doesn't fill the band.
     public static let floor: Double = 2 * 1_048_576
-    /// Per-sample decay of the remembered peak: about half over two minutes.
+    /// Decay of the remembered peak, per SECOND: about half over two minutes.
+    ///
+    /// Per second rather than per sample, because the sample interval is not
+    /// fixed — a band set to an hour of history takes one reading every twenty
+    /// seconds, and a per-sample decay would leave it scaled to a download that
+    /// finished hours ago.
     public static let decay: Double = 0.994
 
     public private(set) var peak: Double
@@ -51,9 +56,15 @@ public struct RateScale: Sendable {
     }
 
     /// Records a reading and returns it as 0...100 of the current scale.
-    public mutating func normalise(_ bytesPerSecond: Double) -> Double {
+    ///
+    /// `secondsSinceLast` is how long the reading covers, so the peak fades at
+    /// the same rate in wall-clock time whatever the band's history span.
+    public mutating func normalise(_ bytesPerSecond: Double,
+                                   secondsSinceLast: Double = 1) -> Double {
         let value = max(0, bytesPerSecond)
-        peak = max(RateScale.floor, max(value, peak * RateScale.decay))
+        let elapsed = max(0, secondsSinceLast)
+        let faded = peak * pow(RateScale.decay, elapsed)
+        peak = max(RateScale.floor, max(value, faded))
         guard peak > 0 else { return 0 }
         return min(100, value / peak * 100)
     }

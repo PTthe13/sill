@@ -2,6 +2,31 @@ import Foundation
 @testable import SillCore
 
 struct MetricTests {
+    func theRatePeakFadesInSecondsNotInSamples() {
+        // Same two minutes of quiet, taken at two different sample rates: the
+        // scale has to end up in the same place, or a band set to a long
+        // history stays scaled to a download that finished hours ago.
+        var fast = RateScale(peak: 100 * 1_048_576)
+        for _ in 0..<120 { _ = fast.normalise(0, secondsSinceLast: 1) }
+        var slow = RateScale(peak: 100 * 1_048_576)
+        for _ in 0..<6 { _ = slow.normalise(0, secondsSinceLast: 20) }
+        expect(abs(fast.peak - slow.peak) / fast.peak < 0.01,
+               "\(fast.peak) vs \(slow.peak)")
+    }
+
+    func theRatePeakNeverFallsThroughTheFloor() {
+        var scale = RateScale(peak: 50 * 1_048_576)
+        for _ in 0..<50 { _ = scale.normalise(0, secondsSinceLast: 600) }
+        expect(scale.peak == RateScale.floor)
+    }
+
+    func aBurstRaisesTheScaleImmediately() {
+        var scale = RateScale()
+        let reading = scale.normalise(80 * 1_048_576, secondsSinceLast: 1)
+        expect(reading == 100, "a new peak fills the band")
+        expect(scale.peak == 80 * 1_048_576)
+    }
+
     func percentagesAndRatesAreDistinguished() {
         expect(!Metric.cpu.isRate)
         expect(!Metric.memory.isRate)

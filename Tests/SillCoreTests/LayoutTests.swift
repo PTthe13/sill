@@ -54,6 +54,26 @@ struct LayoutTests {
         expect(f.maxY <= vf.maxY + 0.001)
     }
 
+    func theWindowNeverHangsOffTheScreen() {
+        // A display narrower than band + gutter: the window stops at the far
+        // side instead of extending into nowhere.
+        let small = CGRect(x: 0, y: 0, width: 200, height: 160)
+        for edge in ScreenEdge.allCases {
+            let window = Layout.windowFrame(edge: edge, visibleFrame: small, panelExtent: 0,
+                                            fraction: 1, screenFrame: small)
+            expect(window.minX >= small.minX - 0.001, "\(edge) \(window)")
+            expect(window.maxX <= small.maxX + 0.001, "\(edge) \(window)")
+            expect(window.minY >= small.minY - 0.001, "\(edge) \(window)")
+            expect(window.maxY <= small.maxY + 0.001, "\(edge) \(window)")
+        }
+    }
+
+    func theWindowStillTakesItsWholeGutterOnARealScreen() {
+        let screen = CGRect(x: 0, y: 0, width: 1710, height: 1069)
+        let window = Layout.windowFrame(edge: .right, visibleFrame: screen, panelExtent: 0)
+        expect(approx(window.width, WaveGeometry.thickness + Layout.hoverGutter))
+    }
+
     func bandNeverExceedsTheVisibleFrame() {
         let small = CGRect(x: 0, y: 0, width: 800, height: 300)
         let f = Layout.waveFrame(edge: .right, visibleFrame: small, fraction: 1)

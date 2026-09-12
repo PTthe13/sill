@@ -78,26 +78,41 @@ final class SampleEngine {
         for key in histories.keys { histories[key]?.resize(to: capacity) }
     }
 
+    /// Metrics whose history is kept whether or not the wave is drawing them,
+    /// so that pointing the wave at one shows the history it already has
+    /// instead of an empty band that takes a quarter of an hour to grow back.
+    ///
+    /// GPU is not in the set: reading the accelerator's statistics costs about
+    /// 2ms, against 0.3ms for the disk counters and 0.02ms for the network
+    /// ones, and paying that every second for a metric nobody asked for would
+    /// roughly double what Sill costs at rest.
+    static let alwaysRecorded: Set<Metric> = [.cpu, .memory, .network, .disk]
+
+    private var recordedMetrics: Set<Metric> { Self.alwaysRecorded.union(waveMetrics) }
+
     /// A metric the wave has just been pointed at starts flat at its current
     /// reading rather than at zero.
     private func rebuildHistories() {
-        for metric in waveMetrics where histories[metric] == nil {
+        for metric in recordedMetrics where histories[metric] == nil {
             histories[metric] = History(capacity: cpu.capacity, filledWith: 0)
         }
-        for metric in histories.keys where !waveMetrics.contains(metric) {
+        for metric in histories.keys where !recordedMetrics.contains(metric) {
             histories[metric] = nil
         }
     }
 
-    private func recordHistories(cpuPercent: Double, memoryPercent: Double) {
-        for metric in waveMetrics {
+    private func recordHistories(cpuPercent: Double, memoryPercent: Double,
+                                 interval: TimeInterval) {
+        for metric in recordedMetrics {
             let value: Double
             switch metric {
             case .cpu: value = cpuPercent
             case .memory: value = memoryPercent
             case .gpu: value = gpuPercent ?? 0
-            case .network: value = networkScale.normalise(network.total)
-            case .disk: value = diskScale.normalise(diskIO.total)
+            case .network: value = networkScale.normalise(network.total,
+                                                          secondsSinceLast: interval)
+            case .disk: value = diskScale.normalise(diskIO.total,
+                                                    secondsSinceLast: interval)
             }
             if histories[metric] == nil {
                 histories[metric] = History(capacity: cpu.capacity, filledWith: value)
@@ -201,11 +216,11 @@ final class SampleEngine {
         let time = CACurrentMediaTime()
         let cpuPercent = cpuSampler.sample()
         let mem = MemorySampler.sample()
-        let needsNetwork = wantsDetail || waveMetrics.contains(.network)
-        let needsDisk = wantsDetail || waveMetrics.contains(.disk)
+        // The cheap counters are read every tick so their histories are real
+        // the moment the wave is pointed at them; the expensive one is not.
+        network = networkSampler.sample()
+        diskIO = diskIOSampler.sample()
         let needsGPU = wantsDetail || waveMetrics.contains(.gpu)
-        network = needsNetwork ? networkSampler.sample() : .zero
-        diskIO = needsDisk ? diskIOSampler.sample() : .zero
         gpuPercent = needsGPU ? GPUSampler.utilisation() : nil
         latest = Sample(cpuPercent: cpuPercent, memoryPercent: mem.percent,
                         memoryUsedBytes: mem.usedBytes)
@@ -236,7 +251,7 @@ final class SampleEngine {
         pending = (0, 0, 0)
         cpu.push(meanCPU)
         memory.push(meanMemory)
-        recordHistories(cpuPercent: meanCPU, memoryPercent: meanMemory)
+        recordHistories(cpuPercent: meanCPU, memoryPercent: meanMemory, interval: interval)
         onSample?(self, time, interval)
     }
 }

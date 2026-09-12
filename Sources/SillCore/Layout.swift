@@ -74,7 +74,14 @@ public enum Layout {
                                    screenFrame: CGRect? = nil) -> CGRect {
         var frame = waveFrame(edge: edge, visibleFrame: visibleFrame, fraction: fraction,
                               screenFrame: screenFrame)
-        let grow = panelExtent > 0 ? panelExtent + gap : hoverGutter
+        // Never grow past the far side of the screen: on a small display the
+        // gutter is wider than the room inboard of the band, and a window
+        // hanging off the edge takes mouse events nobody can reach.
+        // The band is already inset from its own edge, so the room inboard is
+        // what is left after the band and that inset.
+        let room = (edge.isVertical ? visibleFrame.width - frame.width
+                                    : visibleFrame.height - frame.height) - edgeInset
+        let grow = min(max(0, room), panelExtent > 0 ? panelExtent + gap : hoverGutter)
         switch edge {
         case .left:   frame.size.width += grow
         case .right:  frame.origin.x -= grow; frame.size.width += grow
