@@ -12,6 +12,7 @@ public enum Layout {
     /// live in. The window covers it but stays click-through: only the band
     /// itself takes the mouse.
     public static let hoverGutter: CGFloat = 210
+    public static let scrubChipMargin: CGFloat = 10
     /// Width of the panel on a left/right edge. The brief says 298; at that
     /// width the readings had to be set too small to read at a glance, which
     /// defeats the point of a glanceable panel.
@@ -70,6 +71,7 @@ public enum Layout {
     /// `panelExtent` is the panel's width (vertical edges) or height (horizontal).
     public static func windowFrame(edge: ScreenEdge, visibleFrame: CGRect,
                                    panelExtent: CGFloat,
+                                   hoverGutter: CGFloat = Layout.hoverGutter,
                                    fraction: CGFloat = WaveGeometry.defaultLengthFraction,
                                    screenFrame: CGRect? = nil) -> CGRect {
         var frame = waveFrame(edge: edge, visibleFrame: visibleFrame, fraction: fraction,
@@ -119,21 +121,20 @@ public enum Layout {
     /// keeps a gutter), centred on the pointer and clamped to the band's ends.
     public static func scrubChipFrame(edge: ScreenEdge, bandSize: CGSize,
                                       alongPoint: CGFloat, chipSize: CGSize) -> CGRect {
-        let margin: CGFloat = 10
         var frame = CGRect(origin: .zero, size: chipSize)
         switch edge {
         case .right:
-            frame.origin.x = -margin - chipSize.width
+            frame.origin.x = -scrubChipMargin - chipSize.width
             frame.origin.y = alongPoint - chipSize.height / 2
         case .left:
-            frame.origin.x = bandSize.width + margin
+            frame.origin.x = bandSize.width + scrubChipMargin
             frame.origin.y = alongPoint - chipSize.height / 2
         case .top:
             frame.origin.x = alongPoint - chipSize.width / 2
-            frame.origin.y = -margin - chipSize.height
+            frame.origin.y = -scrubChipMargin - chipSize.height
         case .bottom:
             frame.origin.x = alongPoint - chipSize.width / 2
-            frame.origin.y = bandSize.height + margin
+            frame.origin.y = bandSize.height + scrubChipMargin
         }
         if edge.isVertical {
             frame.origin.y = min(max(0, frame.origin.y), max(0, bandSize.height - chipSize.height))
@@ -141,6 +142,12 @@ public enum Layout {
             frame.origin.x = min(max(0, frame.origin.x), max(0, bandSize.width - chipSize.width))
         }
         return frame
+    }
+
+    /// The inboard window space needed to contain a scrub readout.
+    public static func requiredHoverGutter(edge: ScreenEdge, chipSize: CGSize) -> CGFloat {
+        let chipLength = edge.isVertical ? chipSize.width : chipSize.height
+        return chipLength + scrubChipMargin
     }
 
     /// Where the panel sits inside the window: the outer strip, against the

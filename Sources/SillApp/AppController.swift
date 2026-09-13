@@ -286,6 +286,10 @@ final class AppController: NSObject, NSApplicationDelegate {
             band.wave.culpritLookup = { [weak self] age in
                 self?.engine.spikes.culprit(secondsAgo: age)?.name
             }
+            band.wave.onHoverGutterChanged = { [weak self, weak band] in
+                guard let self, let band, self.openBand !== band else { return }
+                self.place(band)
+            }
             bands.append(band)
         }
         for band in bands {
@@ -343,6 +347,7 @@ final class AppController: NSObject, NSApplicationDelegate {
         let frame = isOpenHere && !panelScreenFrame.isEmpty
             ? bandFrame.union(panelScreenFrame).insetBy(dx: -2, dy: -2)
             : Layout.windowFrame(edge: edge, visibleFrame: visible, panelExtent: 0,
+                                 hoverGutter: band.wave.hoverGutter,
                                  fraction: settings.lengthFraction,
                                  screenFrame: band.screen.frame)
         band.window.setFrame(frame, display: true)
@@ -384,6 +389,7 @@ final class AppController: NSObject, NSApplicationDelegate {
         let extent = open ? panelExtent : 0
         let stateWindow = Layout.windowFrame(edge: edge, visibleFrame: band.screen.visibleFrame,
                                              panelExtent: extent,
+                                             hoverGutter: band.wave.hoverGutter,
                                              fraction: settings.lengthFraction,
                                              screenFrame: band.screen.frame)
         var frame = Layout.waveFrameInWindow(edge: edge, windowSize: stateWindow.size,

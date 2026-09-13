@@ -59,6 +59,7 @@ let allTests: [(String, () -> Void)] = [
     ("LayoutTests.theBandStaysFlushWhileClosedAndSlidesInboardWhenOpen", { LayoutTests().theBandStaysFlushWhileClosedAndSlidesInboardWhenOpen() }),
     ("LayoutTests.thePanelIsWideEnoughToReadAtAGlance", { LayoutTests().thePanelIsWideEnoughToReadAtAGlance() }),
     ("LayoutTests.theHoverChipSitsInboardOfTheBand", { LayoutTests().theHoverChipSitsInboardOfTheBand() }),
+    ("LayoutTests.aLongHoverChipExpandsTheClosedWindowToContainIt", { LayoutTests().aLongHoverChipExpandsTheClosedWindowToContainIt() }),
     ("LayoutTests.theChipIsClampedToTheEndsOfTheBand", { LayoutTests().theChipIsClampedToTheEndsOfTheBand() }),
     ("LayoutTests.openWindowGrowsInboardAndStaysFlush", { LayoutTests().openWindowGrowsInboardAndStaysFlush() }),
     ("LayoutTests.panelTakesTheOuterStripAndWaveTheInboardOne", { LayoutTests().panelTakesTheOuterStripAndWaveTheInboardOne() }),

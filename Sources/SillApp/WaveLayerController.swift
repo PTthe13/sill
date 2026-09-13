@@ -47,6 +47,8 @@ final class WaveLayerController {
     var culpritLookup: ((TimeInterval) -> String?)?
     private var chipIndex: Int?
     private var lastStops: [RampStop] = []
+    private(set) var hoverGutter = Layout.hoverGutter
+    var onHoverGutterChanged: (() -> Void)?
     var reduceMotion = false
     var background: BandBackground = .none
     var showsAreaFill = false
@@ -411,6 +413,10 @@ final class WaveLayerController {
         let measured = (labelled as NSString).size(withAttributes: [.font: font])
         let size = CGSize(width: ceil(measured.width) + Self.chipPadding.width * 2,
                           height: ceil(measured.height) + Self.chipPadding.height * 2)
+        let hoverGutter = max(Layout.hoverGutter,
+                              Layout.requiredHoverGutter(edge: edge, chipSize: size))
+        let hoverGutterChanged = hoverGutter != self.hoverGutter
+        self.hoverGutter = hoverGutter
 
         // Band-local: the pointer's position along the axis, mapped back out.
         let bandSize = WaveGeometry.size(edge: edge, length: length)
@@ -436,6 +442,7 @@ final class WaveLayerController {
         chipText.string = labelled
         chipText.foregroundColor = ink.cgColor
         CATransaction.commit()
+        if hoverGutterChanged { onHoverGutterChanged?() }
         Debug.log("chip '\(labelled)' frame=\(chipFrame.debugDescription) "
                   + "opacity=\(chip.opacity) band=\(bandSize.debugDescription) "
                   + "super=\(chip.superlayer != nil)")
