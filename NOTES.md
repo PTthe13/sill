@@ -576,6 +576,26 @@ table is 2.5ms a tick, the GPU another 2ms), the window no longer extends
 past the far edge of a small display, and the hover readout says nothing
 when the pointer is over the stretch a young band has not drawn yet.
 
+## Third pass: the scenario loop
+
+A script that walks every combination the app offers — four edges by four
+backgrounds, five ramps, all twenty-five shape/fill pairs, five history spans,
+four widths, both materials, every display alone and all of them at once, and
+an open/close on each edge — driving the running app through `defaults` and
+`--reload` and checking the window geometry it actually produced against the
+geometry the layout rules say it should have. Eight rounds: 1,416 checks, and
+the only failures were the harness's own — it counted three displays where the
+app had four, because the main one is starred in `--screens` output.
+
+Two things the loop turned up that were not in the checks:
+
+- **Settings costs 40MB and used to keep it.** The window holds a SwiftUI
+  hierarchy; the app sat at 53MB after one visit and stayed there, against 14MB
+  for the band alone. The controller is now released when the window closes.
+- **The click catcher is a second window.** Worth stating: `--windows` now
+  lists two desktop-level windows per band, and anything reading that output
+  has to pick the lower one.
+
 ## Not verified, and why
 
 - **The lock suspension itself.** The polling fix went in after the machine had

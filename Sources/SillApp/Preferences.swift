@@ -5,6 +5,11 @@ import SwiftUI
 
 /// The settings window. Deliberately small: the seven things the brief lists.
 final class PreferencesWindowController: NSWindowController, NSWindowDelegate {
+    /// Called when the window closes, so the controller — and the 40MB of
+    /// SwiftUI behind it — can be let go rather than kept for a visit that may
+    /// never come again.
+    var onClose: (() -> Void)?
+
     init(settings: SillSettings) {
         let view = PreferencesView(settings: settings)
         let hosting = NSHostingController(rootView: view)
@@ -24,9 +29,13 @@ final class PreferencesWindowController: NSWindowController, NSWindowDelegate {
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("not used") }
 
-    /// Back to no Dock icon once the settings window goes away.
+    /// Back to no Dock icon once the settings window goes away, and back to
+    /// the footprint of a band: SwiftUI and its hosting view cost about 40MB
+    /// here, which is three times what the rest of the app uses.
     func windowWillClose(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+        let release = onClose
+        DispatchQueue.main.async { release?() }
     }
 }
 

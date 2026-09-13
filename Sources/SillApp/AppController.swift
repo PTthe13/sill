@@ -133,7 +133,9 @@ final class AppController: NSObject, NSApplicationDelegate {
 
     @objc private func openPreferences() {
         if preferences == nil {
-            preferences = PreferencesWindowController(settings: settings)
+            let controller = PreferencesWindowController(settings: settings)
+            controller.onClose = { [weak self] in self?.preferences = nil }
+            preferences = controller
         }
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
