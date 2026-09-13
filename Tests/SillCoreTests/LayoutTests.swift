@@ -182,6 +182,25 @@ struct LayoutTests {
         }
     }
 
+    func aLongHoverChipExpandsTheClosedWindowToContainIt() {
+        let chip = CGSize(width: 237, height: 26)
+        for edge in ScreenEdge.allCases {
+            let gutter = max(Layout.hoverGutter,
+                             Layout.requiredHoverGutter(edge: edge, chipSize: chip))
+            let window = Layout.windowFrame(edge: edge, visibleFrame: vf, panelExtent: 0,
+                                            hoverGutter: gutter)
+            let wave = Layout.waveFrameInWindow(edge: edge, windowSize: window.size,
+                                                atOuterSide: true)
+            let band = WaveGeometry.size(edge: edge, length: Layout.bandLength(edge: edge,
+                                                                                 visibleFrame: vf))
+            let along = edge.isVertical ? band.height / 2 : band.width / 2
+            let chipFrame = Layout.scrubChipFrame(edge: edge, bandSize: band,
+                                                  alongPoint: along, chipSize: chip)
+                .offsetBy(dx: wave.minX, dy: wave.minY)
+            expect(CGRect(origin: .zero, size: window.size).contains(chipFrame), "\(edge)")
+        }
+    }
+
     func theChipIsClampedToTheEndsOfTheBand() {
         let size = CGSize(width: 170, height: 24)
         for edge in ScreenEdge.allCases {
