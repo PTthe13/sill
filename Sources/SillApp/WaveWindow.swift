@@ -5,6 +5,52 @@ import SillCore
 ///
 /// A non-activating panel: it takes clicks without bringing Sill to the front,
 /// so clicking the wave never pulls focus off whatever you were working in.
+/// The catcher's content: an ordinary view whose only job is to be hit.
+private final class ClickCatcherView: NSView {
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+    override func mouseDown(with event: NSEvent) {
+        (window as? ClickCatcher)?.onClick?(NSEvent.mouseLocation)
+    }
+    override func rightMouseDown(with event: NSEvent) {
+        guard let menu = (window as? ClickCatcher)?.contextMenu else { return }
+        NSMenu.popUpContextMenu(menu, with: event, for: self)
+    }
+}
+
+/// An invisible pane that sits ABOVE the desktop icons, exactly over the band.
+///
+/// The wave window is under the icons so it can never cover a file, but that
+/// also puts it under the Finder's desktop, which is the full size of the
+/// screen — so a click on the band went to the desktop instead of to us. On
+/// macOS that does not just miss: "click wallpaper to reveal desktop" sweeps
+/// every window aside. This catches the click first and does nothing else; it
+/// is one band wide, so the only thing it takes from the desktop is the strip
+/// the band is drawn on.
+final class ClickCatcher: NSPanel {
+    var onClick: ((NSPoint) -> Void)?
+    var contextMenu: NSMenu?
+
+    override var canBecomeKey: Bool { false }
+    override var canBecomeMain: Bool { false }
+
+    init() {
+        super.init(contentRect: CGRect(x: 0, y: 0, width: 52, height: 432),
+                   styleMask: [.borderless, .nonactivatingPanel],
+                   backing: .buffered, defer: false)
+        level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.desktopIconWindow)) + 1)
+        isOpaque = false
+        backgroundColor = .clear
+        hasShadow = false
+        isMovable = false
+        isReleasedWhenClosed = false
+        ignoresMouseEvents = false
+        hidesOnDeactivate = false
+        collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
+        contentView = ClickCatcherView()
+    }
+
+}
+
 final class WaveWindow: NSPanel {
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }

@@ -300,6 +300,15 @@ final class AppController: NSObject, NSApplicationDelegate {
         redraw()
     }
 
+    /// Where a band sits on its screen. Every caller goes through here: a
+    /// `Layout.waveFrame` call that forgets `screenFrame` centres on the
+    /// visible area instead of the display, and the band jumps by half a menu
+    /// bar the moment some other code path lays it out.
+    private func bandFrame(on band: Band) -> CGRect {
+        Layout.waveFrame(edge: settings.edge, visibleFrame: band.screen.visibleFrame,
+                         fraction: settings.lengthFraction, screenFrame: band.screen.frame)
+    }
+
     /// Positions one band's window and restyles its wave for the desktop it
     /// sits on.
     private func place(_ band: Band) {
@@ -317,15 +326,14 @@ final class AppController: NSObject, NSApplicationDelegate {
         if isOpenHere {
             panelSize = panel.measure(edge: edge, bandLength: length)
         }
-        let bandFrame = Layout.waveFrame(edge: edge, visibleFrame: visible,
-                                         fraction: settings.lengthFraction,
-                                         screenFrame: band.screen.frame)
+        let bandFrame = bandFrame(on: band)
         let frame = isOpenHere && !panelScreenFrame.isEmpty
             ? bandFrame.union(panelScreenFrame).insetBy(dx: -2, dy: -2)
             : Layout.windowFrame(edge: edge, visibleFrame: visible, panelExtent: 0,
                                  fraction: settings.lengthFraction,
                                  screenFrame: band.screen.frame)
         band.window.setFrame(frame, display: true)
+        band.placeCatcher(over: bandFrame, isOpen: isOpenHere)
         Debug.log("place[\(openBand === band ? "open" : "closed")] \(band.screen.name) window=\(frame.debugDescription) "
                   + "wave=\(waveFrame(open: isOpenHere, in: frame, on: band, edge: edge).debugDescription)")
 
@@ -436,8 +444,7 @@ final class AppController: NSObject, NSApplicationDelegate {
             // Open into whatever part of the desktop is actually showing, so
             // the panel can stay on the wallpaper without hiding behind a
             // window that happens to sit beside the band.
-            let bandFrame = Layout.waveFrame(edge: edge, visibleFrame: visible,
-                                             fraction: settings.lengthFraction)
+            let bandFrame = bandFrame(on: band)
             let occupied = settings.liftsWhenOpen ? []
                 : ExposedDesktop.occupiedFrames(on: visible)
             panelScreenFrame = PanelPlacement.choose(edge: edge, band: bandFrame,

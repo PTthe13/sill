@@ -7,6 +7,8 @@ import SillCore
 /// once for all of them — but each is styled for its own desktop.
 final class Band {
     let window = WaveWindow()
+    /// Takes the click the desktop would otherwise swallow. See `ClickCatcher`.
+    let catcher = ClickCatcher()
     let wave = WaveLayerController()
     private(set) var screen: ScreenInfo
     var backdrop: BackdropSample = .unknown
@@ -21,6 +23,11 @@ final class Band {
 
     init(screen: ScreenInfo, menu: NSMenu) {
         self.screen = screen
+        catcher.contextMenu = menu
+        catcher.onClick = { [weak self] point in
+            guard let self else { return }
+            self.onClick?(self, self.window.convertPoint(fromScreen: point))
+        }
         if let content = window.contentView as? WaveContentView {
             waveHost.frame = content.bounds
             waveHost.autoresizingMask = [.width, .height]
@@ -82,10 +89,26 @@ final class Band {
         view.frame = bandFrame.offsetBy(dx: -windowFrame.minX, dy: -windowFrame.minY)
     }
 
-    func show() { window.orderFront(nil) }
+    func show() {
+        window.orderFront(nil)
+        catcher.orderFront(nil)
+    }
+
+    /// Keeps the catcher over the band itself — not over the hover gutter,
+    /// which would take clicks meant for the desktop — and out of the way
+    /// while the panel is open, when the window is in front and takes its own.
+    func placeCatcher(over bandFrame: CGRect, isOpen: Bool) {
+        if isOpen {
+            catcher.orderOut(nil)
+        } else {
+            catcher.setFrame(bandFrame, display: false)
+            catcher.orderFront(nil)
+        }
+    }
 
     func close() {
         window.orderOut(nil)
         window.contentView = nil
+        catcher.orderOut(nil)
     }
 }

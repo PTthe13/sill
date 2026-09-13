@@ -182,7 +182,8 @@ if CommandLine.arguments.contains("--backdrop") {
     for screen in NSScreen.screens {
         let info = Screens.info(for: screen)
         let band = Layout.waveFrame(edge: settings.edge, visibleFrame: info.visibleFrame,
-                                    fraction: settings.lengthFraction)
+                                    fraction: settings.lengthFraction,
+                                    screenFrame: info.frame)
         let sample = Backdrop.measure(screen: screen, rect: band, edge: settings.edge)
         let style = Palette.style(ramp: settings.ramp, backdropLuminance: sample.luminance,
                                   backdropVariation: sample.variation)

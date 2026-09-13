@@ -14,7 +14,7 @@ enum BackdropPreview {
         for screen in NSScreen.screens {
             let info = Screens.info(for: screen)
             let band = Layout.waveFrame(edge: edge, visibleFrame: info.visibleFrame,
-                                        fraction: fraction)
+                                        fraction: fraction, screenFrame: info.frame)
             let sample = Backdrop.measure(screen: screen, rect: band, edge: edge)
                 .behind(background)
             for ramp in ramps {

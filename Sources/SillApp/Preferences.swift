@@ -93,6 +93,8 @@ final class PreferencesModel: ObservableObject {
 }
 
 struct PreferencesView: View {
+    /// Slider rows are pinned to this so their captions cannot resize them.
+    static let sliderWidth: CGFloat = 236
     static let lengthRange = Double(WaveGeometry.minimumLengthFraction)
         ... Double(WaveGeometry.maximumLengthFraction)
 
@@ -157,7 +159,13 @@ struct PreferencesView: View {
                     Text("\((model.lengthFraction * 100).roundedInt)% of the screen")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
+                // A slider row is sized by its content, and the caption under
+                // the slider changes length as the value changes — so without a
+                // fixed width the slider itself grows and shrinks as you drag
+                // it. This is the widest the row can be in this window.
+                .frame(width: PreferencesView.sliderWidth, alignment: .leading)
             }
 
             Toggle("Dim when a window is focused", isOn: $model.dimWhenFocused)
@@ -173,7 +181,9 @@ struct PreferencesView: View {
                          : "\(model.spanMinutes.roundedInt) minutes")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
+                .frame(width: PreferencesView.sliderWidth, alignment: .leading)
             }
 
             Toggle("Launch at login", isOn: $model.launchAtLogin)
