@@ -46,8 +46,8 @@ Measured, not estimated — one band, ten idle minutes, on an M-series Mac:
 
 | | |
 | --- | --- |
-| CPU, idle | 0.27% of one core once settled; about twice that for the first ten minutes, while the history fills |
-| Memory | 13 MB, or 20 MB once the detail panel has been opened |
+| CPU, idle | 0.33% of one core with a band on screen; 0.05% while the screen is locked or the band is covered |
+| Memory | 14 MB, or about 21 MB once the detail panel has been opened. Settings costs 40MB more while its window is open, and gives it back on close |
 | Download | 1.1 MB, universal, no runtime |
 | Permissions | none — no Screen Recording, no Accessibility, no helper |
 | While hidden | sampling stops when the band is covered, the display sleeps or the screen locks |
