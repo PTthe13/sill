@@ -58,6 +58,7 @@ Measured, not estimated — one band, ten idle minutes, on an M-series Mac:
 ./Scripts/build-app.sh        # build/Sill.app (universal, ~700K)
 ./Scripts/make-dmg.sh         # build/Sill-<version>.dmg
 swift run silltests           # the test suite
+python3 Scripts/scenario-loop.py 2   # drives the running app through every setting
 ```
 
 `Scripts/make-dmg.sh` produces an ad-hoc signed image. Distributing it needs a

@@ -578,14 +578,17 @@ when the pointer is over the stretch a young band has not drawn yet.
 
 ## Third pass: the scenario loop
 
-A script that walks every combination the app offers — four edges by four
+`Scripts/scenario-loop.py` walks every combination the app offers — four edges by four
 backgrounds, five ramps, all twenty-five shape/fill pairs, five history spans,
 four widths, both materials, every display alone and all of them at once, and
 an open/close on each edge — driving the running app through `defaults` and
 `--reload` and checking the window geometry it actually produced against the
-geometry the layout rules say it should have. Eight rounds: 1,416 checks, and
-the only failures were the harness's own — it counted three displays where the
-app had four, because the main one is starred in `--screens` output.
+geometry the layout rules say it should have. Eight rounds on 1.0.2 and eleven more on
+1.0.3: about 3,000 checks, and every failure was the harness's own — it counted
+three displays where the app had four (the main one is starred in `--screens`
+output), and it read "open" as "elevated", which is only true when the panel
+cannot find free desktop to open into. With those corrected: 356 checks, no
+failures.
 
 Two things the loop turned up that were not in the checks:
 
