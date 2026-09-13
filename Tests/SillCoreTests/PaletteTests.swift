@@ -430,30 +430,55 @@ struct BandBackgroundTests {
     func nothingBehindLeavesTheWallpaperInCharge() {
         expect(approx(BandBackground.none.effectiveLuminance(wallpaper: 0.9), 0.9))
         expect(approx(BandBackground.none.effectiveLuminance(wallpaper: 0.05), 0.05))
-        expect(BandBackground.none.shadeAlpha(lightness: 1) == 0)
+        expect(BandBackground.none.plateAlpha(lightness: 1) == 0)
     }
 
-    func aPlateTakesOverFromTheWallpaper() {
+    func aDarkPlateTakesOverFromTheWallpaper() {
         // The whole point: put something dark behind the band and the strands
         // go back to their bright colours instead of staying inked.
         for background in [BandBackground.shade, .glass] {
             let tone = background.effectiveLuminance(wallpaper: 0.95)
-            expect(tone < 0.3, "\(background.rawValue) did not darken the backdrop")
+            expect(tone < 0.32, "\(background.rawValue) did not darken the backdrop")
             expect(Palette.lightness(backdropLuminance: tone) == 0,
                    "\(background.rawValue) still reads as a light backdrop")
         }
     }
 
-    func theDarkPlateIsHeavierOverALightDesktop() {
-        let overDark = BandBackground.shade.shadeAlpha(lightness: 0)
-        let overLight = BandBackground.shade.shadeAlpha(lightness: 1)
-        expect(overLight > overDark)
-        expect(overDark > 0.3, "too faint to be worth switching on")
-        expect(overLight < 0.75, "a plate, not a wall")
+    func aPalePlateDoesTheReverse() {
+        // Light behind the band means the strands ink up, even on a dark desktop.
+        let tone = BandBackground.light.effectiveLuminance(wallpaper: 0.03)
+        expect(tone > 0.7, "the pale plate did not lighten the backdrop")
+        expect(Palette.lightness(backdropLuminance: tone) > 0.5)
+        expect(BandBackground.light.isPale)
+        expect(!BandBackground.shade.isPale)
+    }
+
+    func aPlateIsHeavierWhereItHasMoreToCover() {
+        expect(BandBackground.shade.plateAlpha(lightness: 1)
+               > BandBackground.shade.plateAlpha(lightness: 0), "dark plate over a light desktop")
+        expect(BandBackground.light.plateAlpha(lightness: 0)
+               > BandBackground.light.plateAlpha(lightness: 1), "pale plate over a dark desktop")
+    }
+
+    func platesAreSoftEnoughToSeeThrough() {
+        for background in [BandBackground.shade, .light] {
+            for lightness in [0.0, 0.5, 1.0] as [CGFloat] {
+                let alpha = background.plateAlpha(lightness: lightness)
+                expect(alpha > 0.15, "\(background.rawValue) too faint to be worth switching on")
+                expect(alpha < 0.45, "\(background.rawValue) is a wall, not a plate")
+            }
+        }
+    }
+
+    func anExistingDarkSettingStillReads() {
+        // The dark plate is stored as "shade", the name it had when it was the
+        // only one — nobody's settings should change under them.
+        expect(BandBackground(rawValue: "shade") == .shade)
+        expect(BandBackground.shade.displayName == "Dark")
     }
 
     func everyBackgroundHasAName() {
-        expect(BandBackground.allCases.count == 3)
+        expect(BandBackground.allCases.count == 4)
         for background in BandBackground.allCases { expect(!background.displayName.isEmpty) }
     }
 }

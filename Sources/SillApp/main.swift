@@ -96,6 +96,7 @@ if let index = CommandLine.arguments.firstIndex(of: "--render") {
     try? FileManager.default.createDirectory(at: optionsFolder, withIntermediateDirectories: true)
     for edge in ScreenEdge.allCases {
         for (name, plate, fill) in [("dark", BandBackground.shade, false),
+                                    ("light", BandBackground.light, false),
                                     ("area", BandBackground.none, true)] {
             var options = WaveRenderer.Options(edge: edge, ramp: .load, length: length, scale: 2)
             options.plate = plate

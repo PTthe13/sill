@@ -30,7 +30,11 @@ public struct RampStop: Equatable, Sendable {
 public enum BandBackground: String, CaseIterable, Codable, Sendable {
     /// The wallpaper, untouched.
     case none
-    /// A flat dark plate. Costs nothing: no blur, no recomposite.
+    /// A pale plate, for a dark desktop or simply for a lighter look.
+    case light
+    /// A dark plate. Costs nothing: no blur, no recomposite. Stored as
+    /// "shade", the name it had when it was the only plate there was, so an
+    /// existing setting keeps working.
     case shade
     /// A real blur. The brief warns against it, and rightly: a blur behind the
     /// band forces the window server to recomposite whenever anything under it
@@ -40,28 +44,43 @@ public enum BandBackground: String, CaseIterable, Codable, Sendable {
     public var displayName: String {
         switch self {
         case .none: return "None"
+        case .light: return "Light"
         case .shade: return "Dark"
         case .glass: return "Glass"
         }
     }
 
-    /// Opacity of the flat plate. Heavier over a light desktop, where it has
-    /// more to cover.
-    public func shadeAlpha(lightness: CGFloat) -> CGFloat {
-        guard self == .shade else { return 0 }
-        return 0.42 + 0.22 * lightness
+    /// Opacity of the flat plate.
+    ///
+    /// Light enough to sit under a wave rather than behind a window: these are
+    /// deliberately far softer than the first version, which covered the
+    /// wallpaper almost completely and made the band look like a widget.
+    public func plateAlpha(lightness: CGFloat) -> CGFloat {
+        switch self {
+        case .none, .glass: return 0
+        // A little heavier over a light desktop, where it has more to cover.
+        case .shade: return 0.22 + 0.14 * lightness
+        // And a little heavier over a dark one, for the same reason.
+        case .light: return 0.24 + 0.14 * (1 - lightness)
+        }
     }
+
+    /// True when the plate is pale rather than dark.
+    public var isPale: Bool { self == .light }
 
     /// What the strands are actually sitting on once a plate is behind them.
     ///
     /// This is the point of the option: put something dark behind the band and
     /// the wave should go back to its bright colours, rather than staying inked
-    /// for a wallpaper it can no longer see.
+    /// for a wallpaper it can no longer see. A pale plate does the reverse.
     public func effectiveLuminance(wallpaper: Double) -> Double {
         switch self {
         case .none: return wallpaper
-        case .shade: return 0.10
-        case .glass: return 0.22
+        // Not 0 and not 1: the plate is soft enough that the wallpaper still
+        // shows through it, so the strands are toned for a blend of the two.
+        case .shade: return min(wallpaper, 0.24)
+        case .light: return max(wallpaper, 0.74)
+        case .glass: return 0.30
         }
     }
 

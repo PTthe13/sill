@@ -79,16 +79,16 @@ public enum WaveRenderer {
 
     /// The optional plate behind the strands.
     private static func drawPlate(in context: CGContext, rect: CGRect, options: Options) {
-        guard options.plate == .shade else { return }
         let luminance = options.profile.isEmpty ? Palette.assumedLuminance
             : options.profile[options.profile.count / 2]
         let lightness = CGFloat(Palette.lightness(backdropLuminance: luminance))
-        let alpha = BandBackground.shade.shadeAlpha(lightness: lightness)
+        let alpha = options.plate.plateAlpha(lightness: lightness)
+        guard alpha > 0 else { return }
         context.saveGState()
         context.addPath(CGPath(roundedRect: rect, cornerWidth: BandBackground.cornerRadius,
                                cornerHeight: BandBackground.cornerRadius, transform: nil))
-        context.setFillColor(lightness > 0.5
-            ? CGColor(srgbRed: 1, green: 1, blue: 1, alpha: alpha * 1.1)
+        context.setFillColor(options.plate.isPale
+            ? CGColor(srgbRed: 1, green: 1, blue: 1, alpha: alpha)
             : CGColor(srgbRed: 0, green: 0, blue: 0, alpha: alpha))
         context.fillPath()
         context.restoreGState()

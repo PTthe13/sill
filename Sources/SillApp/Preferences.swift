@@ -139,7 +139,7 @@ struct PreferencesView: View {
             RampPreview(ramp: model.ramp)
                 .frame(height: 52)
 
-            Picker("Behind", selection: $model.background) {
+            Picker("Background", selection: $model.background) {
                 ForEach(BandBackground.allCases, id: \.self) { Text($0.displayName).tag($0) }
             }
             .pickerStyle(.segmented)

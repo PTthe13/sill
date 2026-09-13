@@ -368,12 +368,12 @@ final class WaveLayerController {
     private func applyPlate() {
         let lightness = CGFloat(Palette.lightness(backdropLuminance:
             profile.isEmpty ? Palette.assumedLuminance : profile[profile.count / 2]))
-        plate.isHidden = background != .shade
-        // Ink on a light desktop, light on a dark one: the plate separates the
-        // wave from the wallpaper without inverting the design.
-        let alpha = background.shadeAlpha(lightness: lightness)
-        plate.backgroundColor = lightness > 0.5
-            ? CGColor(srgbRed: 1, green: 1, blue: 1, alpha: alpha * 1.1)
+        let alpha = background.plateAlpha(lightness: lightness)
+        plate.isHidden = alpha <= 0
+        // Which way the plate goes is the user's choice now, not a guess from
+        // the wallpaper: Light is pale over anything, Dark is ink over anything.
+        plate.backgroundColor = background.isPale
+            ? CGColor(srgbRed: 1, green: 1, blue: 1, alpha: alpha)
             : CGColor(srgbRed: 0, green: 0, blue: 0, alpha: alpha)
         areaColour.isHidden = !showsAreaFill
     }

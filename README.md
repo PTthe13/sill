@@ -67,7 +67,7 @@ Developer ID identity and notarisation — see the header of that script.
 
 Right-click the wave for the menu, or open Settings from it: edge, display,
 show on every display, what the shape and the fill encode, colour ramp, what
-sits behind the band (nothing, dark or glass), area fill, material, width,
+sits behind the band (nothing, light, dark or glass), area fill, material, width,
 dimming, sample interval, launch at login.
 
 The wave draws two readings — its shape and its density — and you choose which:
