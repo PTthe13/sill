@@ -295,15 +295,30 @@ unless they opened the panel. Both are now a choice (Settings → Shape, Fill)
 between CPU, Memory, GPU, Network and Disk. Defaults are unchanged.
 
 Rates need a scale that percentages do not: 5 MB/s is enormous on hotel wifi
-and nothing on a gigabit link. `RateScale` follows the machine — full height is
-the fastest recent moment, with a floor of 2 MB/s so idle noise stays small and
-a slow decay (about half over two minutes) so one huge transfer does not
-flatten the band for the rest of the day. The panel states what full height
-currently means ("full band 12.3 MB/s"), because a band with no stated scale is
-a decoration.
+and nothing on a gigabit link.
 
-Only the metrics something is showing get sampled: a wave on CPU and memory
-never reads the network, and the panel's extras stay panel-only.
+The first attempt turned each reading into a percentage as it was sampled,
+against a remembered peak that decayed. On a running band that was visibly
+wrong, and the user caught it: the network envelope kept slamming to full
+height and the strands already drawn appeared to move. Two causes. A new
+maximum is by definition 100%, so ordinary background chatter redefined full
+height every few seconds; and because the scale drifted while the readings sat
+in the history, identical traffic was drawn at different heights depending on
+when it happened.
+
+Rates are now stored raw, in bytes a second, and scaled only when they are
+drawn — the whole visible window against one scale, which is the step above its
+busiest moment (2, 5, 10, 20, 50 MB/s and so on, floor 2 MB/s). Snapping to
+steps is what keeps the picture still: scaling to the exact maximum would
+redraw every strand slightly whenever the busiest moment changed by a few
+kilobytes. Measured on the running app afterwards: zero rescales of the drawn
+window over 39 consecutive ticks of live traffic. The panel states what full
+height currently means ("full band 20.0 MB/s"), because a band with no stated
+scale is a decoration.
+
+CPU, memory, network and disk are recorded whether or not they are drawn, so
+pointing the wave at one shows the history it already has. GPU is the exception
+— see the second pass below.
 
 ## Colour means load, not age
 

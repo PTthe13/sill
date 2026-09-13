@@ -8,30 +8,42 @@ struct MetricTests {
         expect(Scrub.ageText(.nan) == "now")
     }
 
-    func theRatePeakFadesInSecondsNotInSamples() {
-        // Same two minutes of quiet, taken at two different sample rates: the
-        // scale has to end up in the same place, or a band set to a long
-        // history stays scaled to a download that finished hours ago.
-        var fast = RateScale(peak: 100 * 1_048_576)
-        for _ in 0..<120 { _ = fast.normalise(0, secondsSinceLast: 1) }
-        var slow = RateScale(peak: 100 * 1_048_576)
-        for _ in 0..<6 { _ = slow.normalise(0, secondsSinceLast: 20) }
-        expect(abs(fast.peak - slow.peak) / fast.peak < 0.01,
-               "\(fast.peak) vs \(slow.peak)")
+    func oneScaleForTheWholeWindow() {
+        // Every sample is drawn against the same scale, whatever the scale
+        // happened to be when each was taken. Full height is the step above
+        // the busiest moment, so the proportions are what matter here.
+        let mb = 1_048_576.0
+        let heights = RateWindow.normalised([0, 4 * mb, 1 * mb, 2 * mb])
+        expect(approx(heights[1], 80), "\(heights)")   // 4 of a 5 MB/s scale
+        expect(approx(heights[2], 20))
+        expect(approx(heights[3], 40))
+        expect(heights[0] == 0)
     }
 
-    func theRatePeakNeverFallsThroughTheFloor() {
-        var scale = RateScale(peak: 50 * 1_048_576)
-        for _ in 0..<50 { _ = scale.normalise(0, secondsSinceLast: 600) }
-        expect(scale.peak == RateScale.floor)
+    func theScaleSnapsToStepsSoThePictureStaysStill() {
+        let mb = 1_048_576.0
+        // A busiest moment that creeps from 3.1 to 3.4 MB/s keeps the same
+        // full scale, so nothing already on the band is redrawn.
+        expect(RateWindow.scale(for: [3.1 * mb]) == RateWindow.scale(for: [3.4 * mb]))
+        expect(RateWindow.scale(for: [3.1 * mb]) == 5 * mb)
+        expect(RateWindow.scale(for: [12 * mb]) == 20 * mb)
+        expect(RateWindow.scale(for: [0]) == RateWindow.floor)
     }
 
-    func aBurstRaisesTheScaleImmediately() {
-        var scale = RateScale()
-        let reading = scale.normalise(80 * 1_048_576, secondsSinceLast: 1)
-        expect(reading == 100, "a new peak fills the band")
-        expect(scale.peak == 80 * 1_048_576)
+    func aQuietWindowStaysQuiet() {
+        // Idle chatter must not fill the band just because it is the loudest
+        // thing on it: below the floor, everything is small.
+        let heights = RateWindow.normalised([120_000, 40_000, 900])
+        expect(heights.allSatisfy { $0 < 7 }, "\(heights)")
+        expect(RateWindow.scale(for: [120_000]) == RateWindow.floor)
     }
+
+    func nonsenseReadingsDoNotSetTheScale() {
+        // The NaN and the infinity are ignored; the 3 MB/s sets the step.
+        expect(RateWindow.scale(for: [.nan, .infinity, 3_000_000]) == 5 * 1_048_576)
+        expect(RateWindow.normalised([.nan, 3_000_000])[0] == 0)
+    }
+
 
     func percentagesAndRatesAreDistinguished() {
         expect(!Metric.cpu.isRate)
@@ -50,40 +62,30 @@ struct MetricTests {
         expect(Metric.network.shortName == "network")
     }
 
-    func aRateScaleStartsAtItsFloorSoIdleNoiseStaysSmall() {
-        var scale = RateScale()
+    func idleChatterStaysSmall() {
         // 200 KB/s against a 2 MB/s floor is a tenth of the band, not all of it.
-        let percent = scale.normalise(200_000)
+        let percent = RateWindow.normalised([200_000])[0]
         expect(percent > 0 && percent < 15, "idle traffic filled the band: \(percent)")
     }
 
-    func aBigTransferFillsTheBand() {
-        var scale = RateScale()
-        expect(approx(scale.normalise(50 * 1_048_576), 100))
-        // And the scale now remembers that speed.
-        expect(scale.peak >= 50 * 1_048_576)
+    func halfTheBurstIsHalfTheBand() {
+        let heights = RateWindow.normalised([0, 50 * 1_048_576, 25 * 1_048_576])
+        expect(approx(heights[1], 100))
+        expect(approx(heights[2], 50), "half the burst should be half the band")
     }
 
-    func theScaleFollowsTheFastestRecentMoment() {
-        var scale = RateScale()
-        _ = scale.normalise(100 * 1_048_576)
-        // Half that speed reads as half the band, not as nothing.
-        let half = scale.normalise(50 * 1_048_576)
-        expect(half > 40 && half < 60, "half speed read as \(half)")
-    }
-
-    func theScaleDecaysBackDown() {
-        var scale = RateScale()
-        _ = scale.normalise(200 * 1_048_576)
-        let after = scale.peak
-        for _ in 0..<200 { _ = scale.normalise(0) }
-        expect(scale.peak < after / 2, "one big transfer flattened the band for good")
-        expect(scale.peak >= RateScale.floor, "the scale fell through its floor")
+    func oneHugeTransferDoesNotFlattenTheBandForever() {
+        // Once the transfer has scrolled off the band, the window it leaves
+        // behind is scaled on its own terms again.
+        let during = RateWindow.normalised([200 * 1_048_576, 3 * 1_048_576])
+        expect(during[1] < 3, "\(during)")
+        let after = RateWindow.normalised([3 * 1_048_576, 3 * 1_048_576])
+        expect(after[1] > 50, "\(after)")
     }
 
     func nothingGoesNegativeOrOverfull() {
-        var scale = RateScale()
-        expect(scale.normalise(-500) == 0)
-        expect(scale.normalise(.greatestFiniteMagnitude) <= 100)
+        let heights = RateWindow.normalised([-500, .greatestFiniteMagnitude, 10])
+        expect(heights[0] == 0)
+        expect(heights.allSatisfy { $0 >= 0 && $0 <= 100 })
     }
 }

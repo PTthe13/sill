@@ -58,8 +58,6 @@ final class SampleEngine {
     private let cpuSampler = CPUSampler()
     private let networkSampler = NetworkSampler()
     private let diskIOSampler = DiskIOSampler()
-    private var networkScale = RateScale()
-    private var diskScale = RateScale()
     /// One history per metric the wave is drawing.
     private(set) var histories: [Metric: History] = [:]
     private var timer: Timer?
@@ -109,10 +107,10 @@ final class SampleEngine {
             case .cpu: value = cpuPercent
             case .memory: value = memoryPercent
             case .gpu: value = gpuPercent ?? 0
-            case .network: value = networkScale.normalise(network.total,
-                                                          secondsSinceLast: interval)
-            case .disk: value = diskScale.normalise(diskIO.total,
-                                                    secondsSinceLast: interval)
+            // Rates are stored raw, in bytes a second, and scaled to the band
+            // only when they are drawn — see `RateWindow`.
+            case .network: value = network.total
+            case .disk: value = diskIO.total
             }
             if histories[metric] == nil {
                 histories[metric] = History(capacity: cpu.capacity, filledWith: value)
@@ -121,9 +119,23 @@ final class SampleEngine {
         }
     }
 
-    /// Readings for the two metrics a band draws.
+    /// Readings for the two metrics a band draws, each as 0...100 of the band.
+    ///
+    /// Percentages pass through; rates are scaled here, against the biggest
+    /// reading in the window being drawn, so every sample on the band shares
+    /// one scale.
     func series(envelope: Metric, fill: Metric) -> (envelope: [Double], fill: [Double]) {
-        (histories[envelope]?.values ?? cpu.values, histories[fill]?.values ?? memory.values)
+        (scaled(envelope, fallback: cpu.values), scaled(fill, fallback: memory.values))
+    }
+
+    private func scaled(_ metric: Metric, fallback: [Double]) -> [Double] {
+        let raw = histories[metric]?.values ?? fallback
+        return metric.isRate ? RateWindow.normalised(raw) : raw
+    }
+
+    /// The raw readings, for anything that needs bytes rather than height.
+    func raw(_ metric: Metric) -> [Double] {
+        histories[metric]?.values ?? []
     }
 
     /// How many of the newest samples in `series` were actually measured. A
@@ -135,11 +147,8 @@ final class SampleEngine {
 
     /// What full height means for a rate metric, for the panel to state.
     func fullScaleText(for metric: Metric) -> String? {
-        switch metric {
-        case .network: return networkScale.fullScaleText
-        case .disk: return diskScale.fullScaleText
-        default: return nil
-        }
+        guard metric.isRate else { return nil }
+        return Format.throughput(bytesPerSecond: RateWindow.scale(for: raw(metric)))
     }
 
     var effectiveInterval: TimeInterval? {

@@ -183,9 +183,20 @@ final class AppController: NSObject, NSApplicationDelegate {
         if !visible.isEmpty {
             let series = engine.series(envelope: settings.envelopeMetric,
                                        fill: settings.fillMetric)
+            let measured = engine.measured(envelope: settings.envelopeMetric,
+                                           fill: settings.fillMetric)
             let frame = WaveModel.Frame(cpu: series.envelope, memory: series.fill,
-                                        available: engine.measured(envelope: settings.envelopeMetric,
-                                                                   fill: settings.fillMetric))
+                                        available: measured)
+            if Debug.isEnabled {
+                // Old readings must never change. Log the tail of the history
+                // (everything but the newest few) so a retroactive edit shows
+                // up as a changed digest between ticks.
+                let settled = series.envelope.dropLast(3)
+                let digest = settled.reduce(into: 0.0) { $0 = $0 * 1.000001 + $1 }
+                Debug.log(String(format: "history digest %.6f count %d measured %d newest %.2f",
+                                 digest, series.envelope.count, measured,
+                                 series.envelope.last ?? -1))
+            }
             for band in visible {
                 band.wave.update(frame: frame, interval: interval, tickTime: time)
             }

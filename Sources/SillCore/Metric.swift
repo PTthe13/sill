@@ -32,45 +32,42 @@ public enum Metric: String, CaseIterable, Codable, Sendable {
     public var needsRateSampling: Bool { isRate }
 }
 
-/// Turns a rate into a percentage of the band.
+/// Scales a window of raw rate readings to the height of the band.
 ///
-/// A throughput figure has no ceiling: 5 MB/s is enormous on hotel wifi and
-/// nothing on a gigabit link. The scale therefore follows the machine — it
-/// rises to whatever the fastest recent moment was, and decays back down so a
-/// single huge transfer doesn't flatten the band for the rest of the day.
-public struct RateScale: Sendable {
+/// Rates used to be turned into percentages as they were sampled, against a
+/// remembered peak that decayed. Two things were wrong with that. The scale
+/// drifted, so identical traffic drew a different height depending on when it
+/// happened — and because a new maximum is by definition 100%, ordinary
+/// background chatter kept redefining full height and slamming the envelope to
+/// the top. Scaling the whole visible window at once instead means the band
+/// always reads "the biggest burst on screen is full height", every sample on
+/// it is drawn to the same scale, and a quiet stretch stays quiet.
+public enum RateWindow {
     /// The smallest full scale to use, so idle noise doesn't fill the band.
     public static let floor: Double = 2 * 1_048_576
-    /// Decay of the remembered peak, per SECOND: about half over two minutes.
+
+    /// The steps full height is allowed to take, in megabytes a second.
     ///
-    /// Per second rather than per sample, because the sample interval is not
-    /// fixed — a band set to an hour of history takes one reading every twenty
-    /// seconds, and a per-sample decay would leave it scaled to a download that
-    /// finished hours ago.
-    public static let decay: Double = 0.994
+    /// Snapping to these is what keeps the picture still: scaling to the exact
+    /// maximum would redraw every strand a little differently each time the
+    /// busiest moment on the band changed by a few kilobytes.
+    private static let steps: [Double] = [2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000]
 
-    public private(set) var peak: Double
-
-    public init(peak: Double = RateScale.floor) {
-        self.peak = max(RateScale.floor, peak)
+    /// What full height means for this window of readings, in bytes a second.
+    public static func scale(for values: [Double]) -> Double {
+        let peak = max(floor, values.filter(\.isFinite).max() ?? 0)
+        let megabytes = peak / 1_048_576
+        let step = steps.first { megabytes <= $0 } ?? (megabytes / 1000).rounded(.up) * 1000
+        return step * 1_048_576
     }
 
-    /// Records a reading and returns it as 0...100 of the current scale.
-    ///
-    /// `secondsSinceLast` is how long the reading covers, so the peak fades at
-    /// the same rate in wall-clock time whatever the band's history span.
-    public mutating func normalise(_ bytesPerSecond: Double,
-                                   secondsSinceLast: Double = 1) -> Double {
-        let value = max(0, bytesPerSecond)
-        let elapsed = max(0, secondsSinceLast)
-        let faded = peak * pow(RateScale.decay, elapsed)
-        peak = max(RateScale.floor, max(value, faded))
-        guard peak > 0 else { return 0 }
-        return min(100, value / peak * 100)
-    }
-
-    /// What the full height of the band currently means, for the panel.
-    public var fullScaleText: String {
-        Format.throughput(bytesPerSecond: peak)
+    /// The window as 0...100 of its own scale.
+    public static func normalised(_ values: [Double]) -> [Double] {
+        let full = scale(for: values)
+        return values.map { value in
+            guard value.isFinite, value > 0 else { return 0 }
+            return min(100, value / full * 100)
+        }
     }
 }
+
